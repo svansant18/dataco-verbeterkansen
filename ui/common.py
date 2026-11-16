@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from analysis.evidence import KPI_REGISTER
-from ui.data import Scope, processed_for
+from ui.data import Scope
 
 CENTRAL_QUESTION = (
     "Welke markten en productcategorieën bieden DataCo de grootste verbetermogelijkheden "
@@ -99,7 +99,6 @@ def evidence_panels(
     calc: {kpi_id: dict(numerator, denominator, result, input_rows, analysis_rows)} for the numbers on the page.
     """
     manifest = scope.result.source_manifest
-    prov = processed_for(scope.result)
     with st.expander("🔎 Hoe is dit berekend? · Bron, formule en controles"):
         for kpi_id, values in calc.items():
             d = KPI_REGISTER[kpi_id]
@@ -114,8 +113,7 @@ def evidence_panels(
                 f"- **Let op:** {d['caveat']}"
             )
         st.markdown("**Actieve filters:** " + " · ".join(f"{k}: {v}" for k, v in scope.filters.as_pairs()))
-        st.caption(f"Bron: `{manifest['source_file']}` · SHA-256 `{manifest['source_sha256'][:16]}…` (ongewijzigd na de run) · "
-                   + (f"processed: `{prov['processed_file']}` `{prov['processed_sha256'][:16]}…`" if prov else "geen processed-versie gevonden"))
+        st.caption(f"Bron: `{manifest['source_file']}` · SHA-256 `{manifest['source_sha256'][:16]}…` (ongewijzigd na de run)")
         for n in notes:
             st.markdown(f"- {n}")
     with st.expander("📋 Onderliggende data · Geaggregeerd en privacyveilig"):

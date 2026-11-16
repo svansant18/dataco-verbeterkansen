@@ -7,7 +7,7 @@ import streamlit as st
 
 from analysis.evidence import KPI_REGISTER
 from ui.common import fmt_int, guard, style_figure
-from ui.data import get_scope, processed_for, processed_provenance
+from ui.data import get_scope
 
 ROOT = Path(__file__).resolve().parents[1]
 st.title("Data & Methode")
@@ -61,16 +61,9 @@ with pipeline_tab:
     gc3.metric("Markt × categorie-segmenten", fmt_int(g["market_category_combinations_financial"]))
     st.caption("Deze omzettingen verminderen het aantal rijen door groeperen. Ze staan bewust niet in de rijentrechter.")
 
-    st.subheader("Herkomst en processed-versies")
+    st.subheader("Herkomst")
     m = result.source_manifest
     st.markdown(f"**Bron:** `{m['source_file']}` · SHA-256 `{m['source_sha256']}` · ongewijzigd na de run: **{'ja' if m['raw_hash_unchanged_after_run'] else 'NEE'}**")
-    prov = processed_provenance()
-    if prov:
-        st.dataframe(pd.DataFrame([{k: p[k] for k in ("processed_file", "processed_sha256", "input_rows", "output_rows", "created_at_utc", "status")} for p in prov]),
-                     hide_index=True, width="stretch")
-        st.caption("Gekoppeld aan deze brondata: " + ("ja" if processed_for(result) else "NEE — hash verschilt"))
-    else:
-        st.warning("Nog geen processed-versie opgeslagen. Genereer ze met `python -c \"import pipeline; pipeline.build_processed()\"`.")
 
 with audit_tab:
     st.subheader("Bron-audit — feiten, geen goedkeuring")

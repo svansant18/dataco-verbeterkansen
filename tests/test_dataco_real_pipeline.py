@@ -2,7 +2,6 @@
 
 Technical evidence only: the business meaning of these checks still needs student review.
 """
-import json
 from pathlib import Path
 
 import pytest
@@ -48,15 +47,3 @@ def test_real_totals_reconcile_between_grains(real):
     assert d["orders_all"] == real.grain_audit["unique_orders"]
     manual = real.financial_rows.groupby("Order Id")["is_late"].first()   # independent path: processed frame, one row per order
     assert int(manual.sum()) == d["late_orders"]
-
-
-def test_processed_files_match_their_provenance(real):
-    manifests = sorted((ROOT / "data" / "processed").glob("dataco_financial_lines_*.provenance.json"))
-    if not manifests:
-        pytest.skip("no processed version built yet")
-    meta = json.loads(manifests[-1].read_text(encoding="utf-8"))
-    processed = ROOT / "data" / "processed" / meta["processed_file"]
-    assert pipeline.file_sha256(processed) == meta["processed_sha256"]
-    assert meta["source_sha256"] == real.source_manifest["source_sha256"]
-    assert meta["output_rows"] == len(real.financial_rows)
-    assert meta["input_rows"] == real.stage_audit[0].rows_in

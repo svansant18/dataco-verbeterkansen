@@ -4,7 +4,6 @@ No business logic lives here: filtering and KPIs come from analysis.kpis, the da
 """
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -37,25 +36,6 @@ def get_result() -> PipelineResult | None:
     if path is None:
         return None
     return _cached_result(str(path), path.stat().st_mtime_ns)
-
-
-def processed_provenance() -> list[dict]:
-    """Provenance manifests of processed versions (metadata only, no rows)."""
-    out = []
-    for meta in sorted((ROOT / "data" / "processed").glob("*.provenance.json")):
-        try:
-            out.append(json.loads(meta.read_text(encoding="utf-8")))
-        except (OSError, ValueError):
-            continue
-    return out
-
-
-def processed_for(result: PipelineResult) -> dict | None:
-    """Latest financial_lines provenance whose source hash equals the raw hash in use."""
-    for prov in reversed(processed_provenance()):
-        if prov.get("processed_file", "").startswith("dataco_financial_lines") and prov.get("source_sha256") == result.source_manifest["source_sha256"]:
-            return prov
-    return None
 
 
 def current_filters() -> Filters:

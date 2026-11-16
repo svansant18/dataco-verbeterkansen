@@ -8,10 +8,6 @@ De ruwe CSV wordt nooit aangepast en persoonsgegevens worden niet ingelezen (zie
 from __future__ import annotations
 
 import hashlib
-import json
-import os
-import tempfile
-from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -51,107 +47,6 @@ def file_sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def persist_processed_dataset(
-    df: pd.DataFrame,
-    *,
-    source_path: Path,
-    output_name: str,
-    transformation_steps: list[str],
-    decision_ids: list[str],
-    project_root: Path = Path("."),
-    encoding: str = "utf-8-sig",
-) -> tuple[Path, Path]:
-    """Persist a NEW derived CSV and its manifest under data/processed/ only.
-
-    The original data/raw CSV is opened exclusively for hashing, never for writing.
-    Caller supplies approved transformations and their logged decision identifiers.
-    This does not execute or approve any business transformation itself.
-    """
-    root = Path(project_root).resolve()
-    raw_dir = (root / "data" / "raw").resolve()
-    processed_dir = (root / "data" / "processed").resolve()
-    source = Path(source_path)
-    source = (root / source).resolve() if not source.is_absolute() else source.resolve()
-    if not source.is_relative_to(raw_dir) or not source.is_file() or source.suffix.lower() != ".csv":
-        raise ValueError("Source must be an existing CSV under data/raw/ only")
-    name_path = Path(output_name)
-    if name_path.name != output_name or output_name in (".", "..") or name_path.suffix.lower() != ".csv":
-        raise ValueError("output_name must be a plain .csv filename without directories")
-    if not transformation_steps or not all(isinstance(s, str) and s.strip() for s in transformation_steps):
-        raise ValueError("Supply nonempty transformation_steps for provenance")
-    if not decision_ids or not all(isinstance(s, str) and s.strip() for s in decision_ids):
-        raise ValueError("Supply nonempty approved decision_ids for provenance")
-
-    if processed_dir == raw_dir or processed_dir.is_relative_to(raw_dir) or raw_dir.is_relative_to(processed_dir):
-        raise ValueError("data/processed/ must be a separate directory from data/raw/")
-
-    target = processed_dir / output_name
-    metadata_path = target.with_suffix(".provenance.json")
-    if target.exists() or metadata_path.exists():
-        raise FileExistsError("Processed output already exists; use a new versioned filename")
-
-    raw_hash_before = file_sha256(source)
-    input_rows = len(pd.read_csv(source, usecols=[0], encoding=encoding))  # record count without retaining raw data
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    temporary_csv: Path | None = None
-    temporary_meta: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".csv.tmp", dir=processed_dir, delete=False, newline="") as output:
-            temporary_csv = Path(output.name)
-            df.to_csv(output, index=False)
-        output_hash = file_sha256(temporary_csv)
-        raw_hash_after = file_sha256(source)
-        if raw_hash_before != raw_hash_after:
-            raise RuntimeError("Raw source changed during processing; refusing to publish derived output")
-        metadata = {
-            "source_file": str(source.relative_to(raw_dir)),
-            "source_sha256": raw_hash_before,
-            "processed_file": output_name,
-            "processed_sha256": output_hash,
-            "input_rows": int(input_rows),
-            "output_rows": int(len(df)),
-            "transformation_steps": transformation_steps,
-            "decision_ids": decision_ids,
-            "created_at_utc": datetime.now(timezone.utc).isoformat(),
-            "status": "STORED_LOCALLY_NOT_PUBLICATION_APPROVED",
-        }
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json.tmp", dir=processed_dir, delete=False) as output:
-            temporary_meta = Path(output.name)
-            json.dump(metadata, output, indent=2, ensure_ascii=False)
-            output.write("\n")
-        # Both final paths were checked before writing, so ordinary repeated
-        # calls refuse existing versions. Temporary files are removed on failure.
-        if target.exists() or metadata_path.exists():
-            raise FileExistsError("Processed output exists; cannot overwrite")
-        os.replace(temporary_csv, target)
-        temporary_csv = None
-        os.replace(temporary_meta, metadata_path)
-        temporary_meta = None
-    finally:
-        for item in (temporary_csv, temporary_meta):
-            if item is not None:
-                item.unlink(missing_ok=True)
-    return target, metadata_path
-
-
-def write_profile(profile: dict[str, object], path: Path, project_root: Path = Path(".")) -> Path:
-    """Write a schema report outside data/raw/ and data/processed/.
-
-    This blocks accidental overwrites of raw CSVs (including via symlinks) and
-    prevents mixing audit reports with versioned processed datasets.
-    """
-    root = Path(project_root).resolve()
-    target = Path(path)
-    target = (root / target).resolve() if not target.is_absolute() else target.resolve()
-    raw_dir = (root / "data" / "raw").resolve()
-    processed_dir = (root / "data" / "processed").resolve()
-    if target.is_relative_to(raw_dir) or target.is_relative_to(processed_dir):
-        raise ValueError("Audit reports cannot be written under data/raw/ or data/processed/")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(profile, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return target
 
 
 # ---------------------------------------------------------------------------
@@ -355,47 +250,4 @@ def run_pipeline(source: Path, encoding: str = SOURCE_ENCODING) -> PipelineResul
         quality_report=build_quality_report(raw, financial),
         source_manifest=manifest,
     )
-
-
-STAGE_MODES = {"Bron ingelezen": "transform", "Validatie": "filter", "Opschonen": "transform", "Analysebasis (omzet/winst)": "filter"}
-
-
-def write_row_funnel(result: PipelineResult, processed_sha256: str, project_root: Path = Path(".")) -> Path:
-    """Write the OBSERVED row funnel (from the real run) to reports/local/, never into data/."""
-    root = Path(project_root).resolve()
-    stages = [
-        {"name": s.name, "mode": STAGE_MODES[s.name], "rows_in": s.rows_in, "rows_out": s.rows_out,
-         "primary_exclusion_reasons": dict(s.primary_exclusion_reasons)}
-        for s in result.stage_audit
-    ]
-    if stages[-1]["rows_out"] != len(result.financial_rows):
-        raise ValueError("Funnel does not end at the analysis base")
-    payload = {
-        "source_sha256": result.source_manifest["source_sha256"], "processed_sha256": processed_sha256, "stages": stages,
-        "grain_conversions_not_exclusions": {
-            "order_lines": result.grain_audit["order_lines"], "unique_orders": result.grain_audit["unique_orders"],
-            "order_category_pairs": result.grain_audit["order_category_pairs"],
-        },
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
-    }
-    return write_profile(payload, root / "reports" / "local" / "row_funnel.json", project_root=root)
-
-
-def build_processed(project_root: Path = Path("."), version: str = "v1") -> list[tuple[Path, Path]]:
-    """Persist the in-scope analysis tables as NEW versions under data/processed/ (never overwrites)."""
-    root = Path(project_root).resolve()
-    candidates = [root / "data" / "raw" / RAW_FILENAME]
-    if not candidates[0].is_file():
-        raise ValueError(f"Expected {RAW_FILENAME} under data/raw/, not found")
-    result = run_pipeline(candidates[0])
-    steps = [s.name for s in result.stage_audit] + ["Order x categorie-grain (unieke orders)"]
-    out = []
-    for name, frame in (("financial_lines", result.financial_rows), ("order_category_shipping", result.order_category_shipping)):
-        out.append(persist_processed_dataset(
-            frame, source_path=candidates[0], output_name=f"dataco_{name}_{version}.csv",
-            transformation_steps=steps, decision_ids=DECISION_IDS, project_root=root, encoding=SOURCE_ENCODING,
-        ))
-    meta = json.loads(out[0][1].read_text(encoding="utf-8"))
-    write_row_funnel(result, meta["processed_sha256"], root)
-    return out
 

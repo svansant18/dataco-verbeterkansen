@@ -44,6 +44,5 @@ python -m pytest        # tests
 - `data-exploration.md` — dataprofiel van de ruwe dataset en open vragen
 - `beslissingslogboek.md` — gemaakte keuzes en waarom (V2.1 en V3 samengevoegd)
 - `data/raw/` — ruwe downloads, nooit aanpassen (niet in git). Bronnen: zie `data-exploration.md`
-- `data/processed/` — verwerkte tabellen met herkomst en SHA-256 (niet in git)
 - `requirements.txt` — enkel wat de app importeert; `requirements-dev.txt` voegt `pytest` toe
 - `.env` — geheimen (niet in git)

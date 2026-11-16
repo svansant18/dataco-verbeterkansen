@@ -2,7 +2,7 @@
 data/
 .env
 
-# Lokale uitvoer van de pijplijn (rijentrechter, audit)
+# Oude lokale uitvoer van een eerdere versie van de pijplijn (wordt niet meer gemaakt)
 /reports/local/
 
 # Python
