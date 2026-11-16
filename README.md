@@ -27,6 +27,17 @@ streamlit run app.py
 python -m pytest        # tests
 ```
 
+## Online zetten (Streamlit Community Cloud)
+
+De ruwe CSV (met persoonsgegevens) staat nooit online. De app leest dan de publicatiebundel in `data/published/`; ze toont dezelfde cijfers.
+
+1. Zet de repo op GitHub (`main`). `data/raw/` en `data/processed/` staan in `.gitignore`; alleen `data/published/` gaat mee.
+2. Maak op share.streamlit.io een nieuwe app: repo, branch `main`, hoofdbestand `app.py`. Kies onder *Advanced settings* Python 3.12 of hoger.
+3. Controleer de publieke URL: alle zes pagina's, de filters en de uitklappers "Hoe is dit berekend?".
+
+Lokaal de online situatie nabootsen: zet de omgevingsvariabele `DATACO_BRON=bundel` en start `streamlit run app.py`.
+Een nieuwe bundel maken (nieuwe versie, overschrijft nooit): `python -c "import pipeline; pipeline.build_published('.', 'v2')"`.
+
 ## Bouwwijze: pijplijn van inspecteerbare stappen
 
 - `pipeline.py` bevat pure functies, één per stap, zonder Streamlit-imports.
@@ -48,5 +59,6 @@ python -m pytest        # tests
 - `beslissingslogboek.md` — gemaakte keuzes en waarom (V2.1 en V3 samengevoegd)
 - `data/raw/` — ruwe downloads, nooit aanpassen (niet in git). Bronnen: zie `data-exploration.md`
 - `data/processed/` — verwerkte tabellen met herkomst en SHA-256 (niet in git)
+- `data/published/` — de publicatiebundel (wel in git): dezelfde twee tabellen, alleen analysekolommen, plus herkomst en een metabestand
 - `requirements.txt` — enkel wat de app importeert; `requirements-dev.txt` voegt `pytest` toe
 - `.env` — geheimen (niet in git)
