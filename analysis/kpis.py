@@ -90,6 +90,18 @@ def comparison_dimension(f: Filters) -> tuple[str, str, str]:
     return ("Category Name", "categorie", "categorieën") if f.market else ("Market", "markt", "markten")
 
 
+def available_options(fin: pd.DataFrame, f: Filters) -> tuple[list[str], list[str]]:
+    """Welke markten en categorieën kan je nog kiezen, gegeven de andere keuzes en de periode?
+
+    Kies je een markt, dan bieden de categorieën alleen nog wat in die markt voorkomt, en andersom. Het periodefilter telt mee.
+    Zo kan je geen combinatie kiezen die leeg is. Geeft (markten, categorieën).
+    """
+    in_period = apply_filters(fin, Filters(date_from=f.date_from, date_to=f.date_to))
+    markets = sorted(apply_filters(in_period, Filters(category=f.category))["Market"].unique())
+    categories = sorted(apply_filters(in_period, Filters(market=f.market))["Category Name"].unique())
+    return markets, categories
+
+
 def nothing_to_compare(f: Filters) -> bool:
     """Eén markt én één categorie gekozen: er is nog maar één segment, dus niets om te vergelijken."""
     return bool(f.market and f.category)

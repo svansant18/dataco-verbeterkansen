@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from analysis.kpis import Filters, apply_filters, prioritize_selection
+from analysis.kpis import Filters, apply_filters, available_options, prioritize_selection
 from pipeline import RAW_FILENAME, PipelineResult, run_pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,6 +105,23 @@ def get_scope() -> Scope | None:
 def compute_priorities(scope: Scope):
     """DV4 en Overview: klassen met een vaste referentie; markt en categorie zoomen alleen in (zie prioritize_selection)."""
     return prioritize_selection(scope.ctx_fin, scope.ctx_ocs, market=scope.filters.market, category=scope.filters.category)
+
+
+def dependent_options(result: PipelineResult) -> tuple[list[str], list[str]]:
+    """De opties voor Markt en Categorie: ze hangen van elkaar en van de periode af (zie available_options).
+
+    Is een gekozen waarde niet meer mogelijk (bijvoorbeeld na een andere periode), dan springt dat filter terug op 'Alle'.
+    """
+    for _ in range(3):   # na een reset kunnen de opties van het andere filter veranderen
+        f = current_filters()
+        markets, categories = available_options(result.financial_rows, f)
+        if f.market and f.market not in markets:
+            st.session_state["global_market"] = ALL_MARKETS
+        elif f.category and f.category not in categories:
+            st.session_state["global_category"] = ALL_CATEGORIES
+        else:
+            break
+    return available_options(result.financial_rows, current_filters())
 
 
 def filter_options(result: PipelineResult) -> tuple[list[str], list[str], date, date]:

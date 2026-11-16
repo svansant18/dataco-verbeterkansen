@@ -14,7 +14,10 @@ Streamlit-onderzoeksapp voor Syntra Data Science, Project 1. De app analyseert d
 DV4 synthetiseert DV1 tot DV3. De app claimt geen oorzakelijkheid en geen financiële besparing die de data niet onderbouwt.
 
 De app heeft zes pagina's: Overview, DV1 tot DV4 en **Data & Methode** (rijentrechter, data-audit, KPI-definities, aannames).
-Bovenaan staan filters voor markt, categorie en periode; er is geen zijbalk.
+Bovenaan staan filters voor markt, categorie en periode; er is geen zijbalk. De filters hangen van elkaar af: kies je een markt,
+dan bieden de categorieën alleen wat in die markt voorkomt (en andersom), zodat je geen lege combinatie kan kiezen.
+Kies je één markt, dan vergelijkt de linkergrafiek categorieën (anders markten); de heatmap rechts blijft staan.
+Een filter op markt of categorie zoomt in op DV4: de referenties en klassen blijven die van het hele bedrijf in de gekozen periode.
 
 ## Starten (Windows, PowerShell)
 

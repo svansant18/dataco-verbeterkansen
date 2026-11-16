@@ -1,5 +1,6 @@
 """De app echt openen (Streamlit AppTest): alle pagina's draaien, ook met een filter. Overgeslagen zonder de ruwe CSV."""
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -87,3 +88,32 @@ def test_the_heatmap_stays_when_a_market_is_chosen():
         for page in ("views/dv1.py", "views/dv2.py"):
             at.switch_page(page).run()
             assert _chart_types(at)[:2] == ["bar", "heatmap"], (market, page)
+
+
+def test_category_options_follow_the_chosen_market():
+    """Afhankelijke filters: met een markt gekozen bieden de categorieën alleen wat in die markt voorkomt."""
+    at = _open()
+    every_category = list(at.selectbox(key="global_category").options)
+    at.selectbox(key="global_market").select("Africa")
+    at.run()
+    offered = list(at.selectbox(key="global_category").options)
+    assert offered[0] == "Alle categorieën" and 1 < len(offered) < len(every_category)
+
+
+def test_market_options_follow_the_chosen_category():
+    """De categorie CDs komt maar in twee markten voor."""
+    at = _open()
+    at.selectbox(key="global_category").select("CDs")
+    at.run()
+    assert list(at.selectbox(key="global_market").options) == ["Alle markten", "Europe", "Pacific Asia"]
+
+
+def test_a_choice_that_becomes_impossible_falls_back_to_all():
+    """CDs bestaat alleen in okt-dec 2017: in de eerste twee dagen van 2015 springt de categorie terug op 'Alle'."""
+    at = _open()
+    at.selectbox(key="global_category").select("CDs")
+    at.run()
+    at.date_input(key="global_period").set_value((date(2015, 1, 1), date(2015, 1, 2)))
+    at.run()
+    assert at.selectbox(key="global_category").value == "Alle categorieën"
+    assert not at.exception
