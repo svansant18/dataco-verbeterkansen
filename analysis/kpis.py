@@ -57,7 +57,7 @@ from dataclasses import dataclass  # noqa: E402
 import numpy as np  # noqa: E402
 
 MIN_ORDERS = 30  # D-010: minimum unique eligible orders per market x category
-# D-009 (PROPOSED, not yet approved by the student): discount classes on the 0-1 fraction.
+# D-009 (approved by the student on 2026-11-16, logboek #9): discount classes on the 0-1 fraction.
 DISCOUNT_BINS = (-0.0001, 0.0, 0.05, 0.10, 0.20, 1.0)
 DISCOUNT_LABELS = ("0%", ">0-5%", ">5-10%", ">10-20%", ">20%")
 REVENUE_COL = "Order Item Total"   # net of discount: profit ratio in the source is based on it
