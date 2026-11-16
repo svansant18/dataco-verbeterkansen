@@ -1,0 +1,6 @@
+# Data en geheimen (zie CLAUDE.md, afspraak 4)
+data/
+.env
+
+# Python
+__pycache__/
