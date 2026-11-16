@@ -86,6 +86,11 @@ def guard(scope: Scope | None) -> Scope:
     return scope
 
 
+def bar_height(n_rows: int) -> int:
+    """Hoogte van een grafiek met één rij per categorie: 22 pixels per rij, minstens 380."""
+    return max(380, 22 * n_rows + 80)
+
+
 def style_figure(fig: go.Figure, height: int = 380) -> go.Figure:
     fig.update_layout(height=height, margin=dict(l=8, r=8, t=36, b=8), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                       legend=dict(orientation="h", y=1.12, x=0), font=dict(size=13))
@@ -102,15 +107,18 @@ def insight_box(title: str, bullets: list[str]) -> None:
 # ---- evidence -------------------------------------------------------------------------------------
 def evidence_panels(
     calc: dict[str, dict], scope: Scope, table: pd.DataFrame, *,
+    input_rows: int | None = None, analysis_rows: int | None = None,
     notes: tuple[str, ...] = (), sample: pd.DataFrame | None = None, file_stem: str = "dataco",
 ) -> None:
-    """The two mandatory evidence expanders of every DV.
+    """De twee verplichte uitklappers van elke DV: "Hoe is dit berekend?" en "Onderliggende data".
 
-    calc: {kpi_id: dict(numerator, denominator, result, input_rows, analysis_rows)} for the numbers on the page.
+    calc: {kpi_id: dict(numerator, denominator, result)} voor de getallen op de pagina. Gelden dezelfde rijtellingen voor
+    alle KPI's, geef dan input_rows (rijen vóór de filters) en analysis_rows (rijen erna) één keer mee; anders per KPI in calc.
     """
     manifest = scope.result.source_manifest
     with st.expander("🔎 Hoe is dit berekend? · Bron, formule en controles"):
         for kpi_id, values in calc.items():
+            values = {"input_rows": input_rows, "analysis_rows": analysis_rows, **values}
             d = KPI_REGISTER[kpi_id]
             st.markdown(f"#### {d['label']} · `{kpi_id}`")
             st.markdown(

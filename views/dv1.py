@@ -4,8 +4,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from analysis.kpis import MIN_ORDERS, comparison_dimension, financial_kpis, nothing_to_compare
-from ui.common import (C_MARGIN, C_PROFIT, C_REVENUE, NOTHING_TO_COMPARE, QUESTIONS, evidence_panels, filter_banner,
-                       fmt_int, fmt_money, fmt_pct, guard, insight_box, kpi_row, page_heading, style_figure)
+from ui.common import (C_MARGIN, C_PROFIT, C_REVENUE, NOTHING_TO_COMPARE, QUESTIONS, bar_height, evidence_panels,
+                       filter_banner, fmt_int, fmt_money, fmt_pct, guard, insight_box, kpi_row, page_heading, style_figure)
 from ui.data import get_scope
 
 page_heading("DV1 · Omzet & Winst", QUESTIONS["DV1"])
@@ -59,7 +59,7 @@ with right:
                 fig.add_vline(x=total["margin_pct"], line_dash="dot", line_color="gray", annotation_text="marge selectie")
             fig.update_layout(xaxis_title="Gewogen winstmarge (%)")
             fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(fig, height=max(380, 22 * len(by_dim) + 80)), width="stretch")
+            st.plotly_chart(style_figure(fig, height=bar_height(len(by_dim))), width="stretch")
             st.caption("Categorieën gesorteerd op omzet. De stippellijn is de marge van de hele selectie; "
                        "kleine categorieën zijn minder betrouwbaar (zie het aantal regels in de hover).")
         else:
@@ -73,7 +73,7 @@ with right:
                 customdata=counts.values, hovertemplate="%{y} · %{x}<br>Marge: %{z:.1f}%<br>Orderregels: %{customdata:,}<extra></extra>",
             ))
             heat.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(heat, height=max(380, 22 * len(pivot) + 80)), width="stretch")
+            st.plotly_chart(style_figure(heat, height=bar_height(len(pivot))), width="stretch")
             st.caption("Lege cel = combinatie komt niet voor in de selectie. Kleur toont alleen de hoogte van de marge, geen oordeel.")
 
 # --- insights generated from the computed tables only ---
@@ -103,15 +103,14 @@ insight_box("Wat zien we?", bullets)
 detail = by_mc.sort_values("revenue", ascending=False).rename(columns={
     "Market": "Markt", "Category Name": "Categorie", "revenue": "Omzet (netto)", "profit": "Winst", "margin_pct": "Marge %",
     "gross_sales": "Bruto Sales", "lines": "Orderregels", "orders": "Unieke orders"}).round(2)
-n_in = len(scope.result.financial_rows)
 evidence_panels(
     {
-        "K-REV": dict(numerator=total["revenue"], denominator=None, result=total["revenue"], input_rows=n_in, analysis_rows=len(fin)),
-        "K-PROFIT": dict(numerator=total["profit"], denominator=None, result=total["profit"], input_rows=n_in, analysis_rows=len(fin)),
-        "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"], input_rows=n_in, analysis_rows=len(fin)),
-        "K-ORDERS": dict(numerator=total["orders"], denominator=total["lines"], result=total["orders"], input_rows=n_in, analysis_rows=len(fin)),
+        "K-REV": dict(numerator=total["revenue"], denominator=None, result=total["revenue"]),
+        "K-PROFIT": dict(numerator=total["profit"], denominator=None, result=total["profit"]),
+        "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"]),
+        "K-ORDERS": dict(numerator=total["orders"], denominator=total["lines"], result=total["orders"]),
     },
-    scope, detail, file_stem="dv1_markt_categorie",
+    scope, detail, input_rows=len(scope.result.financial_rows), analysis_rows=len(fin), file_stem="dv1_markt_categorie",
     notes=("Unieke orders per categorie tellen een order met meerdere categorieën in elke categorie; ze tellen dus niet op tot het totaal.",),
     sample=fin[["Order Id", "Order Item Id", "Market", "Category Name", "order_date", "Sales", "Order Item Total", "Order Profit Per Order"]],
 )

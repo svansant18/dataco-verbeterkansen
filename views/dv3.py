@@ -71,11 +71,10 @@ insight_box("Wat zien we?", bullets)
 detail = classes.rename(columns={"discount_class": "Kortingsklasse", "revenue": "Omzet (netto)", "profit": "Winst", "margin_pct": "Gewogen marge %",
                                  "lines": "Orderregels", "orders": "Unieke orders", "gross_sales": "Bruto Sales"}).round(2)
 detail["Kortingsklasse"] = detail["Kortingsklasse"].astype(str)
-n_in = len(scope.result.financial_rows)
 evidence_panels(
-    {"K-DISC": dict(numerator=total["profit"], denominator=total["revenue"], result=corr["spearman"], input_rows=n_in, analysis_rows=len(fin)),
-     "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"], input_rows=n_in, analysis_rows=len(fin))},
-    scope, detail, file_stem="dv3_kortingsklassen",
+    {"K-DISC": dict(numerator=total["profit"], denominator=total["revenue"], result=corr["spearman"]),
+     "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"])},
+    scope, detail, input_rows=len(scope.result.financial_rows), analysis_rows=len(fin), file_stem="dv3_kortingsklassen",
     notes=(f"Kortingseenheid geaudit: min {scope.result.quality_report['discount_rate_min']}, max {scope.result.quality_report['discount_rate_max']} → fractie 0–1 ({scope.result.quality_report['discount_rate_unit']}); in de grafiek ×100. Geen dubbele omrekening.",
            f"Klassegrenzen (fractie): {list(DISCOUNT_BINS[1:])} → {list(DISCOUNT_LABELS)}. Goedgekeurd (D-009, logboek 9).",
            "Gewogen kortingspercentage = som(Order Item Discount) / som(Sales); dit verschilt van het gemiddelde van regelpercentages."),

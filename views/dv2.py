@@ -5,8 +5,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from analysis.kpis import MIN_ORDERS, comparison_dimension, delivery_kpis, nothing_to_compare
-from ui.common import (C_LATE, NOTHING_TO_COMPARE, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_pct, guard,
-                       insight_box, kpi_row, page_heading, style_figure)
+from ui.common import (C_LATE, NOTHING_TO_COMPARE, QUESTIONS, bar_height, evidence_panels, filter_banner, fmt_int,
+                       fmt_pct, guard, insight_box, kpi_row, page_heading, style_figure)
 from ui.data import get_scope
 
 page_heading("DV2 · Leverbetrouwbaarheid", QUESTIONS["DV2"])
@@ -72,7 +72,7 @@ with right:
                 fig.add_vline(x=total["late_pct"], line_dash="dot", line_color="gray", annotation_text="selectie")
             fig.update_layout(xaxis_title="% vertraagde orders", xaxis_range=[0, 100])
             fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(fig, height=max(380, 22 * len(cat) + 80)), width="stretch")
+            st.plotly_chart(style_figure(fig, height=bar_height(len(cat))), width="stretch")
             st.caption(f"Categorieën met minder dan {MIN_ORDERS} orders zijn leeg gelaten (onvoldoende data): "
                        f"{int(cat['p'].isna().sum())} van {len(cat)} categorieën. De stippellijn is het % van de hele selectie.")
         else:
@@ -87,7 +87,7 @@ with right:
                 customdata=cnt.values, hovertemplate="%{y} · %{x}<br>%{z:.1f}% vertraagd<br>%{customdata:,} orders<extra></extra>",
             ))
             heat.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(heat, height=max(380, 22 * len(piv) + 80)), width="stretch")
+            st.plotly_chart(style_figure(heat, height=bar_height(len(piv))), width="stretch")
             hidden = int((~enough).sum())
             st.caption(f"Cellen met minder dan {MIN_ORDERS} orders zijn leeg gelaten (onvoldoende data): {hidden} van {len(by_mc)} combinaties.")
 
@@ -108,13 +108,12 @@ detail = by_mc.sort_values(["late_pct", "eligible_orders"], ascending=[False, Fa
     "Market": "Markt", "Category Name": "Categorie", "orders_all": "Alle orders", "eligible_orders": "In aanmerking",
     "late_orders": "Vertraagd", "excluded_orders": "Uitgesloten", "late_pct": "% vertraagd"}).round(2)
 detail["Voldoende data"] = np.where(by_mc.loc[detail.index, "eligible_orders"] >= MIN_ORDERS, "ja", f"nee (< {MIN_ORDERS})")
-n_in = len(scope.result.order_category_shipping)
 evidence_panels(
     {
-        "K-LATEPCT": dict(numerator=total["late_orders"], denominator=total["eligible_orders"], result=total["late_pct"], input_rows=n_in, analysis_rows=len(ocs)),
-        "K-EXCL": dict(numerator=total["excluded_orders"], denominator=total["orders_all"], result=100 * total["excluded_orders"] / total["orders_all"], input_rows=n_in, analysis_rows=len(ocs)),
+        "K-LATEPCT": dict(numerator=total["late_orders"], denominator=total["eligible_orders"], result=total["late_pct"]),
+        "K-EXCL": dict(numerator=total["excluded_orders"], denominator=total["orders_all"], result=100 * total["excluded_orders"] / total["orders_all"]),
     },
-    scope, detail, file_stem="dv2_markt_categorie",
+    scope, detail, input_rows=len(scope.result.order_category_shipping), analysis_rows=len(ocs), file_stem="dv2_markt_categorie",
     notes=("Rijen in deze verantwoording zijn order × markt × categorie-combinaties (niet orderregels).",
            "Geen enkele order heeft tegenstrijdige leverstatussen (pipeline stopt anders met een fout; geen stille first())."),
     sample=ocs[["Order Id", "Market", "Category Name", "order_date", "delivery_status", "is_late", "delivery_eligible"]],

@@ -151,26 +151,33 @@ def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: 
     table = fin_kpi.merge(del_kpi[keys + ["eligible_orders", "late_orders", "late_pct"]], on=keys, how="inner")
     ref_margin = None if fin_kpi["revenue"].sum() <= 0 else 100 * fin_kpi["profit"].sum() / fin_kpi["revenue"].sum()
     ref_late = None if del_kpi["eligible_orders"].sum() <= 0 else 100 * del_kpi["late_orders"].sum() / del_kpi["eligible_orders"].sum()
+    # 1. Telt het segment mee, en zit het boven of onder de referentie?
     enough = (table["eligible_orders"] >= min_orders) & table["margin_pct"].notna() & table["late_pct"].notna()
     median_rev = table.loc[enough, "revenue"].median() if enough.any() else np.nan
+    # Een onbekende referentie (None) wordt NaN: een vergelijking met NaN is altijd onwaar, dus dan voldoet geen enkel segment.
+    margin_limit = np.nan if ref_margin is None else ref_margin
+    late_limit = np.nan if ref_late is None else ref_late
     table["enough_data"] = enough
     table["high_volume"] = enough & (table["revenue"] >= median_rev)
-    table["low_margin"] = enough & (table["margin_pct"] < ref_margin) if ref_margin is not None else False
-    table["high_late"] = enough & (table["late_pct"] > ref_late) if ref_late is not None else False
+    table["low_margin"] = enough & (table["margin_pct"] < margin_limit)
+    table["high_late"] = enough & (table["late_pct"] > late_limit)
 
-    def label(r: pd.Series) -> tuple[str, str]:
-        if not r["enough_data"]:
-            return "Onvoldoende data", f"minder dan {min_orders} in aanmerking komende orders of onbekende marge"
-        if r["high_volume"] and r["low_margin"] and r["high_late"]:
-            return "Prioriteit", "hoge omzet, marge onder referentie én vertraging boven referentie"
-        if r["high_late"]:
-            return "Optimaliseren", "vertraging boven referentie"
-        if r["low_margin"]:
-            return "Monitoren", "marge onder referentie"
-        return "Sterk", "geen duidelijke risicocombinatie"
-
-    labelled = table.apply(label, axis=1, result_type="expand")
-    table["priority"], table["reason"] = labelled[0], labelled[1]
+    # 2. De klasse: de eerste voorwaarde die waar is, wint. Wat nergens onder valt, is "Sterk".
+    conditions = [
+        ~table["enough_data"],
+        table["high_volume"] & table["low_margin"] & table["high_late"],
+        table["high_late"],
+        table["low_margin"],
+    ]
+    classes = ["Onvoldoende data", "Prioriteit", "Optimaliseren", "Monitoren"]
+    reasons = [
+        f"minder dan {min_orders} in aanmerking komende orders of onbekende marge",
+        "hoge omzet, marge onder referentie én vertraging boven referentie",
+        "vertraging boven referentie",
+        "marge onder referentie",
+    ]
+    table["priority"] = np.select(conditions, classes, default="Sterk")
+    table["reason"] = np.select(conditions, reasons, default="geen duidelijke risicocombinatie")
     table["priority_rank"] = table["priority"].map({p: i for i, p in enumerate(PRIORITY_ORDER)})
     # deterministic: class, revenue desc, market, category
     table = table.sort_values(["priority_rank", "revenue", "Market", "Category Name"], ascending=[True, False, True, True]).reset_index(drop=True)
