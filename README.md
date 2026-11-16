@@ -41,6 +41,7 @@ streamlit run explore_raw_data/app.py
 - `dv1_omzet_winst/` — DV1: omzet, winst en marge per markt en categorie (leest `data/processed/dataco_clean.csv`)
 - `dv2_leverbetrouwbaarheid/` — DV2: percentage vertraagde unieke orders per markt, categorie en verzendmethode
 - `dv3_kortingen_marges/` — DV3: verband tussen kortingspercentage en marge (scatters en kortingsklassen)
+- `dv4_verbeterprioriteiten/` — DV4: prioriteitenmatrix en rangschikking, bouwt op DV1 tot DV3
 - `explore_raw_data/app.py` — dataverkenner voor de ruwe bestanden (wordt bevroren na de pipeline; nog niet gebouwd)
 - `data-exploration.md` — dataprofiel en open vragen
 - `data/processed/` — verwerkte data uit de pijplijn (niet in git)

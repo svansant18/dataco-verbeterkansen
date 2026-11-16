@@ -80,6 +80,19 @@ Alle andere kolommen zijn volledig ingevuld. `Product Status` is overal 0 en bev
 | **DV3 Kortingen & marges** | `Order Item Discount`, `Order Item Discount Rate`, `Order Item Profit Ratio`, `Order Profit Per Order`, `Sales`, `Order Item Total`, `Market`, `Category Name` |
 | **DV4 Prioriteiten** | Samengesteld uit DV1 t/m DV3 per markt x categorie |
 
+## Hoe betrouwbaar is een marge op weinig orderlijnen? (onderbouwing van de drempel in DV4)
+
+De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking van **0,467**. Een gemiddelde over *n* lijnen heeft dan een standaardfout van ongeveer 0,467 / wortel(*n*). Dit is een **ruwe schatting**: de app gebruikt de gewogen marge (som winst / som omzet), niet het gewone gemiddelde.
+
+| Orderlijnen | Standaardfout van de marge |
+|---|---|
+| 30 | ca. 8,5 procentpunt |
+| 100 | ca. 4,7 procentpunt |
+| 300 | ca. 2,7 procentpunt |
+| 1 000 | ca. 1,5 procentpunt |
+
+Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis. Daarom is de drempel in DV4 instelbaar met 300 als standaard. 47 van de 162 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet).
+
 ## Open vragen (aannames voor `beslissingslogboek.md`)
 
 1. Tellen `CANCELED` en `SUSPECTED_FRAUD` mee in omzet en winst?
