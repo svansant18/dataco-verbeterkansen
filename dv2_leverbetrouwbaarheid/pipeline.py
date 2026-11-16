@@ -130,8 +130,8 @@ def to_order_categorie(df: pd.DataFrame) -> tuple[pd.DataFrame, StapInfo]:
     meerdere = int((df.groupby("order_id")["categorie"].nunique() > 1).sum())
     reden = (
         f"Ontdubbeld op order en categorie: {len(df):,} orderlijnen worden {len(paren):,} paren van order en categorie. ".replace(",", ".")
-        + f"{meerdere:,} orders bevatten meer dan één categorie en tellen in elk daarvan mee, ".replace(",", ".")
-        + "dus de som over categorieën is groter dan het aantal unieke orders. Alleen voor de categorie-analyse."
+        + f"{meerdere:,} orders bevatten meer dan één categorie en tellen in elk daarvan mee".replace(",", ".")
+        + ", dus de som over categorieën is groter dan het aantal unieke orders. Alleen voor de categorie-analyse."
     )
     return paren, StapInfo("4. Order x categorie", len(df), len(paren), reden, paren.head(5))
 

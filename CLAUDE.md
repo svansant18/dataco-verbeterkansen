@@ -6,7 +6,7 @@ Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-ex
 
 1. Per sub-app één `app.py` voor de interface; de logica in aparte, benoemde functies. Sub-apps:
    `explore_raw_data/` (dataverkenner, **wordt bevroren** na de pipeline, zie 9; nog niet gebouwd),
-   `pipeline_dataco/` (pijplijn en vergelijking ruw vs verwerkt), `dv1_omzet_winst/` (DV1) en `dv2_leverbetrouwbaarheid/` (DV2); beide
+   `pipeline_dataco/` (pijplijn en vergelijking ruw vs verwerkt), `dv1_omzet_winst/` (DV1), `dv2_leverbetrouwbaarheid/` (DV2) en `dv3_kortingen_marges/` (DV3); die
    lezen `data/processed/dataco_clean.csv`, dus eerst in `pipeline_dataco` op "Sla verwerkte data op" klikken. Verder de sub-apps voor de deelvragen bij de
    centrale vraag (zie `README.md`).
    Starten: `streamlit run app.py` (root-starter met sub-app-keuze bovenaan; laadt `<submap>\app.py`

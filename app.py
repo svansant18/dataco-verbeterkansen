@@ -18,6 +18,7 @@ SUBAPPS = {
     "Pijplijn DataCo": "pipeline_dataco",
     "DV1 Omzet & winst": "dv1_omzet_winst",
     "DV2 Leverbetrouwbaarheid": "dv2_leverbetrouwbaarheid",
+    "DV3 Kortingen & marges": "dv3_kortingen_marges",
 }
 
 
