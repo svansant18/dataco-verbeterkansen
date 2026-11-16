@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.evidence import KPI_REGISTER, build_record
+from analysis.evidence import KPI_REGISTER
 from ui.data import Scope, processed_for
 
 CENTRAL_QUESTION = (
@@ -103,14 +103,7 @@ def evidence_panels(
     with st.expander("🔎 Hoe is dit berekend? · Bron, formule en controles"):
         for kpi_id, values in calc.items():
             d = KPI_REGISTER[kpi_id]
-            rec = build_record(
-                kpi_id, filters=scope.filters.as_pairs(), input_rows=values["input_rows"], analysis_rows=values["analysis_rows"],
-                numerator=values.get("numerator"), denominator=values.get("denominator"), result=values.get("result"),
-                raw_sha256=manifest["source_sha256"], processed_sha256=prov["processed_sha256"] if prov else None,
-                processed_file=prov["processed_file"] if prov else None,
-            )
-            badge = "✅ technisch gevalideerd (tests + herkomst)" if rec.status == "VALIDATED" else "⏳ PENDING (processed-versie ontbreekt)"
-            st.markdown(f"#### {d['label']} · `{kpi_id}` · {badge}")
+            st.markdown(f"#### {d['label']} · `{kpi_id}`")
             st.markdown(
                 f"- **WAT:** {d['formula']} · eenheid: {d['unit']}\n"
                 f"- **WAAR:** bronkolommen `{'`, `'.join(d['source_columns'])}` · grain: {d['grain']} · pipeline: {' → '.join(d['pipeline_stages'])}\n"
