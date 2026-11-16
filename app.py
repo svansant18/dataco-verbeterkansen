@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 # naam in de keuzebalk -> submap
 SUBAPPS = {
     "Pijplijn DataCo": "pipeline_dataco",
+    "DV1 Omzet & winst": "dv1_omzet_winst",
 }
 
 
