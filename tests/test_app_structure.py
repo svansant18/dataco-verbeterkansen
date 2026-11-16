@@ -1,27 +1,8 @@
+"""Afspraken uit CLAUDE.md die je aan de broncode kan zien. Wat de app doet, staat in test_app_pages.py."""
 from pathlib import Path
 import ast
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-def test_six_streamlit_pages_and_top_navigation():
-    app = (ROOT / "app.py").read_text(encoding="utf-8")
-    assert 'position="top"' in app
-    assert app.count('st.Page("views/') == 6
-    assert 'st.navigation(' in app
-    assert not (ROOT / "eda_app.py").exists()
-
-
-def test_four_questions_have_evidence_panels():
-    common = (ROOT / "ui" / "common.py").read_text(encoding="utf-8")
-    for q in ("DV1", "DV2", "DV3", "DV4"):
-        assert f'"{q}":' in common
-    for name in ("dv1", "dv2", "dv3", "dv4"):
-        text = (ROOT / "views" / f"{name}.py").read_text(encoding="utf-8")
-        assert "evidence_panels(" in text
-    components = (ROOT / "ui" / "common.py").read_text(encoding="utf-8")
-    assert "Hoe is dit berekend?" in components
-    assert "Onderliggende data" in components
 
 
 def test_pure_pipeline_no_streamlit_dependency():

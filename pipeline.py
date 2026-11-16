@@ -229,7 +229,6 @@ def build_quality_report(raw: pd.DataFrame, financial: pd.DataFrame) -> dict[str
         "discount_rate_unit": "fraction 0-1" if financial["Order Item Discount Rate"].max() <= 1 else "percentage 0-100 (mixed unit risk)",
         "order_period_start": str(financial["order_date"].min().date()),
         "order_period_end": str(financial["order_date"].max().date()),
-        "pii_columns_loaded": 0,
     }
 
 

@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 import pipeline
-from analysis.kpis import (Filters, apply_filters, comparison_dimension, delivery_kpis, financial_kpis, nothing_to_compare,
-                           priority_table, prioritize_selection)
+from analysis.kpis import (RISK_CLASSES, Filters, apply_filters, comparison_dimension, delivery_kpis, financial_kpis,
+                           nothing_to_compare, priority_table, prioritize_selection)
 from test_dataco_kpis import raw_line, run_steps
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +63,11 @@ def test_zooming_in_on_a_market_keeps_references_and_classes():
     assert set(zoomed["Market"]) == {"LATAM"} and len(zoomed) == 2
     assert refs_zoom == refs_all
     assert all(_classes(zoomed)[s] == _classes(everything)[s] for s in _classes(zoomed))
+
+
+def test_only_classes_with_a_risk_count_as_improvement_priorities():
+    """Logboek 25: 'Sterk' en 'Onvoldoende data' staan niet in de top-lijsten."""
+    assert RISK_CLASSES == ("Prioriteit", "Optimaliseren", "Monitoren")
 
 
 def test_one_market_compares_categories_otherwise_markets():

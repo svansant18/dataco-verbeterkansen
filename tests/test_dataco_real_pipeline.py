@@ -25,8 +25,8 @@ def test_real_funnel_adds_up_and_raw_unchanged(real):
     assert s[-1].rows_out == s[0].rows_in - sum(x.rows_excluded for x in s)
     assert real.source_manifest["raw_hash_unchanged_after_run"]
     assert real.source_manifest["source_sha256"] == pipeline.file_sha256(RAW[0])
-    assert real.quality_report["pii_columns_loaded"] == 0
-    assert not any("Email" in c or "Password" in c for c in real.financial_rows.columns)
+    # Persoonsgegevens komen niet in de resultaten: de kolommen worden niet ingelezen (zie ook test_analysis_columns_contain_no_personal_data).
+    assert not any(w in c for c in real.financial_rows.columns for w in ("Customer", "Email", "Password", "Street"))
 
 
 def test_profit_is_line_level_in_real_data(real):
@@ -45,5 +45,5 @@ def test_real_totals_reconcile_between_grains(real):
     d = delivery_kpis(real.order_category_shipping).iloc[0]
     assert d["eligible_orders"] == real.grain_audit["unique_orders_delivery_eligible"]
     assert d["orders_all"] == real.grain_audit["unique_orders"]
-    manual = real.financial_rows.groupby("Order Id")["is_late"].first()   # independent path: processed frame, one row per order
+    manual = real.financial_rows.groupby("Order Id")["is_late"].first()   # onafhankelijke route: per order de eerste rij van de analysebasis
     assert int(manual.sum()) == d["late_orders"]
