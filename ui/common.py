@@ -24,6 +24,8 @@ QUESTIONS = {
 # Consistent colours across pages: revenue blue, profit teal, margin violet, delay amber/red.
 C_REVENUE, C_PROFIT, C_MARGIN, C_LATE = "#2563EB", "#0D9488", "#7C3AED", "#D97706"
 NB = "N/B"
+NOTHING_TO_COMPARE = ("Je filtert op één markt én één categorie: er is maar één segment, dus er valt niets te vergelijken. "
+                      "Kies 'Alle markten' of 'Alle categorieën' om te vergelijken.")
 
 
 # ---- formatting (Dutch separators; never show a made-up number) ----------------------------------

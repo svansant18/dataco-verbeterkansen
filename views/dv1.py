@@ -1,10 +1,11 @@
 """DV1 — Omzet & Winst: real aggregates from the validated pipeline."""
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.kpis import MIN_ORDERS, financial_kpis
-from ui.common import (C_PROFIT, C_REVENUE, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct,
-                       guard, insight_box, kpi_row, page_heading, style_figure)
+from analysis.kpis import MIN_ORDERS, comparison_dimension, financial_kpis, nothing_to_compare
+from ui.common import (C_MARGIN, C_PROFIT, C_REVENUE, NOTHING_TO_COMPARE, QUESTIONS, evidence_panels, filter_banner,
+                       fmt_int, fmt_money, fmt_pct, guard, insight_box, kpi_row, page_heading, style_figure)
 from ui.data import get_scope
 
 page_heading("DV1 · Omzet & Winst", QUESTIONS["DV1"])
@@ -13,7 +14,9 @@ fin = scope.fin
 filter_banner(scope, f"{fmt_int(len(fin))} orderregels in de analysebasis")
 
 total = financial_kpis(fin).iloc[0]
-by_market = financial_kpis(fin, ["Market"]).sort_values("revenue", ascending=False)
+dim, dim_one, dim_many = comparison_dimension(scope.filters)   # per markt, of per categorie als je één markt kiest
+single = nothing_to_compare(scope.filters)                       # één markt én één categorie: niets te vergelijken
+by_dim = financial_kpis(fin, [dim]).sort_values("revenue", ascending=False)
 by_mc = financial_kpis(fin, ["Market", "Category Name"])
 
 kpi_row([
@@ -26,39 +29,69 @@ kpi_row([
 left, right = st.columns([1.0, 1.15])
 with left:
     with st.container(border=True):
-        st.subheader("Omzet en winst per markt")
-        fig = go.Figure()
-        fig.add_bar(name="Omzet", x=by_market["Market"], y=by_market["revenue"], marker_color=C_REVENUE,
-                    hovertemplate="%{x}<br>Omzet: %{y:,.0f}<extra></extra>")
-        fig.add_bar(name="Winst", x=by_market["Market"], y=by_market["profit"], marker_color=C_PROFIT,
-                    customdata=by_market[["margin_pct", "lines", "orders"]],
-                    hovertemplate="%{x}<br>Winst: %{y:,.0f}<br>Marge: %{customdata[0]:.1f}%<br>%{customdata[1]:,} regels · %{customdata[2]:,} orders<extra></extra>")
-        fig.update_layout(barmode="group", yaxis_title="Bedrag (bronvaluta)")
-        st.plotly_chart(style_figure(fig), width="stretch")
+        shown = by_dim.head(10)
+        st.subheader(f"Omzet en winst per {dim_one}" + (" (top 10 op omzet)" if len(shown) < len(by_dim) else ""))
+        if single:
+            st.info(NOTHING_TO_COMPARE)
+        else:
+            fig = go.Figure()
+            fig.add_bar(name="Omzet", x=shown[dim], y=shown["revenue"], marker_color=C_REVENUE,
+                        hovertemplate="%{x}<br>Omzet: %{y:,.0f}<extra></extra>")
+            fig.add_bar(name="Winst", x=shown[dim], y=shown["profit"], marker_color=C_PROFIT,
+                        customdata=shown[["margin_pct", "lines", "orders"]],
+                        hovertemplate="%{x}<br>Winst: %{y:,.0f}<br>Marge: %{customdata[0]:.1f}%<br>%{customdata[1]:,} regels · %{customdata[2]:,} orders<extra></extra>")
+            fig.update_layout(barmode="group", yaxis_title="Bedrag (bronvaluta)")
+            st.plotly_chart(style_figure(fig), width="stretch")
 with right:
     with st.container(border=True):
-        st.subheader("Winstmarge per markt × categorie")
-        pivot = by_mc.pivot(index="Category Name", columns="Market", values="margin_pct")
-        order = by_mc.groupby("Category Name")["revenue"].sum().sort_values(ascending=False).index
-        pivot = pivot.reindex(order)
-        counts = by_mc.pivot(index="Category Name", columns="Market", values="lines").reindex(order)
-        heat = go.Figure(go.Heatmap(
-            z=pivot.values, x=pivot.columns, y=pivot.index, colorscale="Purples", colorbar=dict(title="Marge %"),
-            customdata=counts.values, hovertemplate="%{y} · %{x}<br>Marge: %{z:.1f}%<br>Orderregels: %{customdata:,}<extra></extra>",
-        ))
-        heat.update_yaxes(autorange="reversed")
-        st.plotly_chart(style_figure(heat, height=max(380, 22 * len(pivot) + 80)), width="stretch")
-        st.caption("Lege cel = combinatie komt niet voor in de selectie. Kleur toont alleen de hoogte van de marge, geen oordeel.")
+        if single:
+            st.subheader("Winstmarge per categorie")
+            st.info(NOTHING_TO_COMPARE)
+        elif dim == "Category Name":
+            # Eén markt gekozen: een heatmap zou één kolom zijn. Daarom een balk per categorie.
+            st.subheader("Winstmarge per categorie")
+            fig = go.Figure(go.Bar(
+                y=by_dim["Category Name"], x=by_dim["margin_pct"], orientation="h", marker_color=C_MARGIN,
+                customdata=by_dim[["lines", "orders"]],
+                hovertemplate="%{y}<br>Marge: %{x:.1f}%<br>%{customdata[0]:,} regels · %{customdata[1]:,} orders<extra></extra>",
+            ))
+            if pd.notna(total["margin_pct"]):
+                fig.add_vline(x=total["margin_pct"], line_dash="dot", line_color="gray", annotation_text="marge selectie")
+            fig.update_layout(xaxis_title="Gewogen winstmarge (%)")
+            fig.update_yaxes(autorange="reversed")
+            st.plotly_chart(style_figure(fig, height=max(380, 22 * len(by_dim) + 80)), width="stretch")
+            st.caption("Categorieën gesorteerd op omzet. De stippellijn is de marge van de hele selectie; "
+                       "kleine categorieën zijn minder betrouwbaar (zie het aantal regels in de hover).")
+        else:
+            st.subheader("Winstmarge per markt × categorie")
+            pivot = by_mc.pivot(index="Category Name", columns="Market", values="margin_pct")
+            order = by_mc.groupby("Category Name")["revenue"].sum().sort_values(ascending=False).index
+            pivot = pivot.reindex(order)
+            counts = by_mc.pivot(index="Category Name", columns="Market", values="lines").reindex(order)
+            heat = go.Figure(go.Heatmap(
+                z=pivot.values, x=pivot.columns, y=pivot.index, colorscale="Purples", colorbar=dict(title="Marge %"),
+                customdata=counts.values, hovertemplate="%{y} · %{x}<br>Marge: %{z:.1f}%<br>Orderregels: %{customdata:,}<extra></extra>",
+            ))
+            heat.update_yaxes(autorange="reversed")
+            st.plotly_chart(style_figure(heat, height=max(380, 22 * len(pivot) + 80)), width="stretch")
+            st.caption("Lege cel = combinatie komt niet voor in de selectie. Kleur toont alleen de hoogte van de marge, geen oordeel.")
 
 # --- insights generated from the computed tables only ---
 bullets = []
-top = by_market.iloc[0]
-share = 100 * top["revenue"] / total["revenue"]
-bullets.append(f"**{top['Market']}** heeft de hoogste omzet ({fmt_money(top['revenue'])}, {fmt_pct(share)} van het totaal) en een marge van {fmt_pct(top['margin_pct'])}.")
-if len(by_market) > 1:
-    low = by_market.sort_values("margin_pct").iloc[0]
-    high = by_market.sort_values("margin_pct").iloc[-1]
-    bullets.append(f"Margeverschil tussen markten: laagste **{low['Market']}** ({fmt_pct(low['margin_pct'])}), hoogste **{high['Market']}** ({fmt_pct(high['margin_pct'])}).")
+if not single:
+    top = by_dim.iloc[0]
+    share = 100 * top["revenue"] / total["revenue"]
+    figures = f"({fmt_money(top['revenue'])}, {fmt_pct(share)} van het totaal) en een marge van {fmt_pct(top['margin_pct'])}."
+    if dim == "Market":
+        bullets.append(f"**{top[dim]}** heeft de hoogste omzet {figures}")
+    else:
+        bullets.append(f"In {scope.filters.market} heeft **{top[dim]}** de hoogste omzet {figures}")
+    # Voor categorieën tellen alleen de groepen met genoeg orders mee: kleine groepen geven extreme marges.
+    pool = by_dim if dim == "Market" else by_dim[by_dim["orders"] >= MIN_ORDERS]
+    if len(pool) > 1:
+        low = pool.sort_values("margin_pct").iloc[0]
+        high = pool.sort_values("margin_pct").iloc[-1]
+        bullets.append(f"Margeverschil tussen {dim_many}: laagste **{low[dim]}** ({fmt_pct(low['margin_pct'])}), hoogste **{high[dim]}** ({fmt_pct(high['margin_pct'])}).")
 solid = by_mc[by_mc["orders"] >= MIN_ORDERS].sort_values("margin_pct")
 if not solid.empty:
     r = solid.iloc[0]

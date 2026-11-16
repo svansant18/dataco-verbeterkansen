@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 import pipeline
-from analysis.kpis import Filters, apply_filters, delivery_kpis, financial_kpis, priority_table, prioritize_selection
+from analysis.kpis import (Filters, apply_filters, comparison_dimension, delivery_kpis, financial_kpis, nothing_to_compare,
+                           priority_table, prioritize_selection)
 from test_dataco_kpis import raw_line, run_steps
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,21 @@ def test_zooming_in_on_a_market_keeps_references_and_classes():
     assert set(zoomed["Market"]) == {"LATAM"} and len(zoomed) == 2
     assert refs_zoom == refs_all
     assert all(_classes(zoomed)[s] == _classes(everything)[s] for s in _classes(zoomed))
+
+
+def test_one_market_compares_categories_otherwise_markets():
+    """Met één markt zou 'per markt' maar één staaf tonen: dan vergelijken we categorieën."""
+    assert comparison_dimension(Filters()) == ("Market", "markt", "markten")
+    assert comparison_dimension(Filters(category="Cleats")) == ("Market", "markt", "markten")
+    assert comparison_dimension(Filters(market="Europe")) == ("Category Name", "categorie", "categorieën")
+    assert comparison_dimension(Filters(market="Europe", category="Cleats"))[0] == "Category Name"
+
+
+def test_nothing_to_compare_only_when_both_market_and_category_are_chosen():
+    assert not nothing_to_compare(Filters())
+    assert not nothing_to_compare(Filters(market="Europe"))
+    assert not nothing_to_compare(Filters(category="Cleats"))
+    assert nothing_to_compare(Filters(market="Europe", category="Cleats"))
 
 
 @pytest.mark.skipif(not RAW, reason="no raw CSV under data/raw/")

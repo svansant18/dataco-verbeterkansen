@@ -82,6 +82,19 @@ class Filters:
         )
 
 
+def comparison_dimension(f: Filters) -> tuple[str, str, str]:
+    """Waarover vergelijken de grafieken? Bij één gekozen markt per categorie, anders per markt.
+
+    Met één markt zou "per markt" maar één staaf tonen. Geeft (kolom, enkelvoud, meervoud).
+    """
+    return ("Category Name", "categorie", "categorieën") if f.market else ("Market", "markt", "markten")
+
+
+def nothing_to_compare(f: Filters) -> bool:
+    """Eén markt én één categorie gekozen: er is nog maar één segment, dus niets om te vergelijken."""
+    return bool(f.market and f.category)
+
+
 def apply_filters(df: pd.DataFrame, f: Filters, *, date_col: str = "order_date") -> pd.DataFrame:
     """One filter contract shared by every KPI, chart and table (filter consistency)."""
     mask = pd.Series(True, index=df.index)
