@@ -1,7 +1,7 @@
-"""DataCo — one Streamlit research app, six pages, three global filters.
+"""DataCo: één Streamlit-app met zes pagina's en drie globale filters (markt, categorie, periode).
 
-Business logic lives in pipeline.py and analysis/; pages only lay out results.
-Never publish an identifiable/raw DataCo CSV. See docs/SPEC.md.
+De rekenlogica staat in pipeline.py en analysis/; de pagina's tonen alleen de resultaten.
+Publiceer nooit de ruwe DataCo-CSV: die bevat persoonsgegevens.
 """
 from __future__ import annotations
 

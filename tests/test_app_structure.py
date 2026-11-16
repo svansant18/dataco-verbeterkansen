@@ -37,7 +37,7 @@ def test_pure_pipeline_no_streamlit_dependency():
 
 
 def test_required_documents_exist():
-    for f in ("README.md", "CLAUDE.md", "beslissingslogboek.md", "docs/SPEC.md", "docs/KPI_REGISTER.md"):
+    for f in ("README.md", "CLAUDE.md", "beslissingslogboek.md", "data-exploration.md"):
         assert (ROOT / f).is_file()
 
 

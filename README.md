@@ -40,7 +40,6 @@ python -m pytest        # tests
 - `ui/` — gedeelde weergave (`common.py`) en data-toegang met cache (`data.py`)
 - `views/` — de zes pagina's
 - `tests/` — pytest voor pijplijn, KPI's, grain, data-levenscyclus en appstructuur
-- `docs/` — specificatie, KPI-register, traceerbaarheid, architectuur, onderzoeksontwerp en gebruikershandleiding
 - `data-exploration.md` — dataprofiel van de ruwe dataset en open vragen
 - `beslissingslogboek.md` — gemaakte keuzes en waarom (V2.1 en V3 samengevoegd)
 - `data/raw/` — ruwe downloads, nooit aanpassen (niet in git). Bronnen: zie `data-exploration.md`
