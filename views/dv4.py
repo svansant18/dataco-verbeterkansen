@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
+from analysis.kpis import RISK_CLASSES
 from ui.common import (C_LATE, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
                        kpi_row, page_heading, style_figure)
 from ui.data import compute_priorities, get_scope
@@ -22,8 +23,10 @@ kpi_row([
     ("Segmenten (markt × categorie)", fmt_int(len(table)), "Combinaties in de actieve selectie (DV1 ∩ DV2)"),
     (f"Voldoende data (≥ {refs['min_orders']} orders)", fmt_int(len(enough)), "Anders 'Onvoldoende data' — nooit 'laag risico'"),
     ("Segmenten met Prioriteit", fmt_int(counts.get("Prioriteit", 0)), "Hoge omzet + marge onder referentie + vertraging boven referentie"),
-    ("Referentie marge · vertraging", f"{fmt_pct(refs['ref_margin_pct'])} · {fmt_pct(refs['ref_late_pct'])}", "Gewogen totalen van dezelfde selectie (DV1 resp. DV2)"),
+    ("Referentie marge · vertraging", f"{fmt_pct(refs['ref_margin_pct'])} · {fmt_pct(refs['ref_late_pct'])}", "Gewogen totalen van alle markten en categorieën in de gekozen periode (DV1 resp. DV2)"),
 ])
+if scope.filters.market or scope.filters.category:
+    st.caption("Een filter op markt of categorie zoomt in: de referenties en de klassen blijven die van het hele bedrijf in de gekozen periode.")
 
 STYLE = {"Prioriteit": ("#DC2626", "diamond"), "Optimaliseren": (C_LATE, "square"), "Monitoren": ("#7C3AED", "triangle-up"), "Sterk": ("#0D9488", "circle")}
 left, right = st.columns([1.15, 0.95])
@@ -57,13 +60,16 @@ with left:
 with right:
     with st.container(border=True):
         st.subheader("Top 5 verbeterprioriteiten")
-        top = enough.head(5).copy()
-        view = top[["priority", "Market", "Category Name", "revenue", "margin_pct", "late_pct", "eligible_orders", "reason"]].rename(columns={
-            "priority": "Klasse", "Market": "Markt", "Category Name": "Categorie", "revenue": "Omzet", "margin_pct": "Marge %",
-            "late_pct": "% vertraagd", "eligible_orders": "Orders", "reason": "Reden"})
-        view.insert(0, "#", range(1, len(view) + 1))
-        st.dataframe(view.round(1), width="stretch", hide_index=True)
-        st.caption("Sortering: klasse (Prioriteit → Sterk), daarna omzet dalend, markt, categorie (deterministisch).")
+        top = enough[enough["priority"].isin(RISK_CLASSES)].head(5).copy()
+        if top.empty:
+            st.info("Geen segment met een risico in deze selectie.")
+        else:
+            view = top[["priority", "Market", "Category Name", "revenue", "margin_pct", "late_pct", "eligible_orders", "reason"]].rename(columns={
+                "priority": "Klasse", "Market": "Markt", "Category Name": "Categorie", "revenue": "Omzet", "margin_pct": "Marge %",
+                "late_pct": "% vertraagd", "eligible_orders": "Orders", "reason": "Reden"})
+            view.insert(0, "#", range(1, len(view) + 1))
+            st.dataframe(view.round(1), width="stretch", hide_index=True)
+        st.caption("Alleen segmenten met een risico (Prioriteit, Optimaliseren, Monitoren), gesorteerd op klasse, daarna omzet dalend, markt, categorie.")
 
 # --- conclusion generated from the table ---
 with st.container(border=True):

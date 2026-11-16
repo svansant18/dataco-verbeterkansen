@@ -72,7 +72,7 @@ KPI_REGISTER: dict[str, dict] = {
         numerator="-", denominator="-", aggregation="beslisregels, geen score",
         missing_rule="< 30 orders of onbekende marge = 'Onvoldoende data' (nooit 'laag risico')", pipeline_stages=("DV1", "DV2"), decision_id="D-010",
         test_ids=(_T + "test_priority_min_orders_and_tiebreak",),
-        caveat="Hypothese/onderzoeksprioriteit, geen bewezen oorzaak of eurobesparing. Referenties = gewogen totalen van de actieve selectie.",
+        caveat="Hypothese/onderzoeksprioriteit, geen bewezen oorzaak of eurobesparing. Referenties = gewogen totalen van alle markten en categorieën in de gekozen periode; een filter op markt of categorie zoomt alleen in.",
     ),
 }
 
