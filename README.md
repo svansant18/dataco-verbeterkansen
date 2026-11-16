@@ -39,6 +39,7 @@ streamlit run explore_raw_data/app.py
 - `app.py` — starter: toont de keuze van sub-app bovenaan en laadt de gekozen sub-app
 - `pipeline_dataco/` — `pipeline.py` (stappen) en `app.py` (toont stappen, trechter en ruw-vs-verwerkt)
 - `dv1_omzet_winst/` — DV1: omzet, winst en marge per markt en categorie (leest `data/processed/dataco_clean.csv`)
+- `dv2_leverbetrouwbaarheid/` — DV2: percentage vertraagde unieke orders per markt, categorie en verzendmethode
 - `explore_raw_data/app.py` — dataverkenner voor de ruwe bestanden (wordt bevroren na de pipeline; nog niet gebouwd)
 - `data-exploration.md` — dataprofiel en open vragen
 - `data/processed/` — verwerkte data uit de pijplijn (niet in git)

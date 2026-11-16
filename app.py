@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 SUBAPPS = {
     "Pijplijn DataCo": "pipeline_dataco",
     "DV1 Omzet & winst": "dv1_omzet_winst",
+    "DV2 Leverbetrouwbaarheid": "dv2_leverbetrouwbaarheid",
 }
 
 
