@@ -3,7 +3,6 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.kpis import PRIORITY_ORDER
 from ui.common import (C_LATE, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
                        kpi_row, page_heading, style_figure)
 from ui.data import compute_priorities, get_scope

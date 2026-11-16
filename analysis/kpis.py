@@ -1,60 +1,14 @@
-"""Small generic KPI primitives. Real DataCo field mapping awaits audited approval.
+"""DataCo-KPI's: pure pandas-functies, zonder Streamlit.
 
-Do not infer the meaning of Delivery Status or the profit field from its name.
+Omzet, winst en marge (DV1), % vertraagde orders (DV2), korting en marge (DV3) en de
+prioriteitsregel (DV4). De keuzes erachter staan in beslissingslogboek.md (D-006 t/m D-011).
 """
 from __future__ import annotations
 
-import math
+from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
-
-
-def safe_ratio(numerator: object, denominator: object) -> float | None:
-    """Return None for invalid, nonfinite or zero denominator values."""
-    try:
-        num = float(numerator)
-        den = float(denominator)
-    except (TypeError, ValueError):
-        return None
-    if not math.isfinite(num) or not math.isfinite(den) or den == 0.0:
-        return None
-    return num / den
-
-
-def safe_percent(numerator: object, denominator: object) -> float | None:
-    ratio = safe_ratio(numerator, denominator)
-    return None if ratio is None else 100 * ratio
-
-
-def count_unique_boolean_events(
-    frame: pd.DataFrame,
-    *,
-    id_col: str,
-    event_col: str,
-) -> tuple[int, int]:
-    """Count unique IDs with a consistent boolean event flag, never order lines.
-
-    The caller must FIRST map the source status to approved True/False.
-    No automatic guessing of what 'late' or 'canceled' means.
-    """
-    subset = frame[[id_col, event_col]].copy()
-    if subset[id_col].isna().any() or subset[event_col].isna().any():
-        raise ValueError("Unresolved IDs or event flags; apply an approved policy first")
-    if not subset[event_col].map(lambda v: isinstance(v, (bool, type(pd.NA))) and v is not pd.NA).all():
-        raise ValueError("Event flag must be a reviewed, nonmissing boolean")
-    inconsistencies = subset.groupby(id_col, dropna=False)[event_col].nunique(dropna=False)
-    if (inconsistencies > 1).any():
-        raise ValueError("Conflicting event flags for one ID; do not silently use first()")
-    unique = subset.drop_duplicates(subset=[id_col])
-    return int(unique[event_col].sum()), int(len(unique))
-
-
-# ---------------------------------------------------------------------------
-# DataCo KPIs (V9). Pure pandas, no Streamlit. Decisions D-006..D-011.
-# ---------------------------------------------------------------------------
-from dataclasses import dataclass  # noqa: E402
-
-import numpy as np  # noqa: E402
 
 MIN_ORDERS = 30  # D-010: minimum unique eligible orders per market x category
 # D-009 (approved by the student on 2026-11-16, logboek #9): discount classes on the 0-1 fraction.

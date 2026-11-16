@@ -1,20 +1,12 @@
-"""DataCo standalone Python pipeline (not an app).
+"""DataCo-pijplijn: pure functies (geen Streamlit) die de ruwe CSV in stappen verwerkt.
 
-Usage:
-    python pipeline.py --input data/raw/DataCoSupplyChainDataset.csv \
-        --report docs/data_audit_profile.json
-
-The starter performs a privacy-safe SCHEMA PROFILE ONLY. Approved DataCo
-cleaning, transformations, KPI calculations and row-drop accounting must be
-added AFTER student approval of source/KPI definitions, with pure functions and independent tests.
-
-This module does not import or execute Streamlit. No CSV is provided with the
-starter package. The raw data are never written to the report file.
+Stappen: inlezen -> valideren -> opschonen -> analysebasis (omzet en winst) -> order x categorie.
+Elke stap telt hoeveel rijen erin en eruit gaan en waarom (zie StageCounts).
+De ruwe CSV wordt nooit aangepast en persoonsgegevens worden niet ingelezen (zie ANALYSIS_COLUMNS).
 """
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -50,38 +42,6 @@ def validate_stage_counts(stage: StageCounts) -> bool:
     if sum(stage.primary_exclusion_reasons.values()) != stage.rows_excluded:
         raise ValueError("Rows excluded do not match exclusive reason counts")
     return True
-
-
-def profile_input(df: pd.DataFrame) -> dict[str, object]:
-    """Read-only basic metadata, without row values or personally identifiable data."""
-    return {"rows": len(df), "columns": len(df.columns), "column_names": list(df.columns)}
-
-
-def profile_schema(df: pd.DataFrame) -> dict[str, object]:
-    """Pure schema profile; no business cleaning or private record values."""
-    return {
-        "status": "SCHEMA_ONLY_NOT_BUSINESS_VALIDATED",
-        "rows": int(len(df)),
-        "columns": int(len(df.columns)),
-        "fields": [
-            {
-                "name": str(col),
-                "dtype": str(df.iloc[:, idx].dtype),
-                "null_count": int(df.iloc[:, idx].isna().sum()),
-            }
-            for idx, col in enumerate(df.columns)
-        ],
-        "duplicate_header_count": int(df.columns.duplicated().sum()),
-        "approved_data_rules": False,
-        "remarks": "No rows excluded; no KPI calculated. Business decisions remain pending.",
-    }
-
-
-def read_source(path: Path, encoding: str = "utf-8-sig") -> pd.DataFrame:
-    """Explicit I/O boundary; throws on nonexistent/invalid source files."""
-    if not path.is_file():
-        raise FileNotFoundError(f"Source CSV not found: {path}")
-    return pd.read_csv(path, encoding=encoding, low_memory=False)
 
 
 def file_sha256(path: Path) -> str:
@@ -192,61 +152,6 @@ def write_profile(profile: dict[str, object], path: Path, project_root: Path = P
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(profile, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return target
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Read-only DataCo schema profile. Not a Streamlit app.")
-    parser.add_argument("--input", type=Path, required=True, help="Path to local CSV under data/raw/")
-    parser.add_argument("--report", type=Path, default=Path("docs/data_audit_profile.json"))
-    parser.add_argument("--encoding", default="utf-8-sig", help="CSV encoding, e.g. utf-8-sig or latin1")
-    args = parser.parse_args(argv)
-    raw_hash_before = file_sha256(args.input)
-    df = read_source(args.input, args.encoding)
-    report_path = write_profile(profile_schema(df), args.report)
-    raw_hash_after = file_sha256(args.input)
-    if raw_hash_before != raw_hash_after:
-        raise RuntimeError("Raw source changed during schema profiling")
-    print(f"Schema profile saved to {report_path}: {len(df)} source rows; ZERO transformations applied.")
-    print("Next step: audit fields and approve G0/G1 before DataCo cleaning and KPI logic.")
-    return 0
-
-
-def audit_order_grain(df: pd.DataFrame) -> dict[str, object]:
-    """Return only counts/metadata, never raw customer/order identifiers.
-
-    This is an exploratory grain audit, not a decision to aggregate KPI fields.
-    """
-    if "Order Id" not in df.columns:
-        return {"status": "MISSING_ORDER_ID", "order_id_column_present": False}
-
-    keys = df["Order Id"].astype("string").str.strip()
-    valid_mask = keys.notna() & keys.ne("")
-    valid_keys = keys[valid_mask]
-    order_line_counts = valid_keys.value_counts(dropna=True)
-    summary: dict[str, object] = {
-        "status": "AUDIT_ONLY_NOT_BUSINESS_VALIDATED",
-        "order_id_column_present": True,
-        "source_rows": int(len(df)),
-        "rows_with_missing_order_id": int((~valid_mask).sum()),
-        "unique_order_ids": int(valid_keys.nunique()),
-        "orders_with_multiple_rows": int((order_line_counts > 1).sum()),
-        "max_rows_per_order": int(order_line_counts.max()) if not order_line_counts.empty else 0,
-    }
-    if "Order Item Id" in df.columns:
-        item_ids = df["Order Item Id"].astype("string").str.strip()
-        item_present = item_ids.notna() & item_ids.ne("")
-        summary["missing_order_item_id"] = int((~item_present).sum())
-        summary["duplicate_order_item_id_rows"] = int(item_ids[item_present].duplicated().sum())
-    if "Category Name" in df.columns:
-        temp = pd.DataFrame({"key": valid_keys, "category": df.loc[valid_mask, "Category Name"].astype("string")})
-        cat_counts = temp.groupby("key", dropna=False)["category"].nunique(dropna=True)
-        summary["orders_spanning_multiple_categories"] = int((cat_counts > 1).sum())
-    if "Delivery Status" in df.columns:
-        temp = pd.DataFrame({"key": valid_keys, "status": df.loc[valid_mask, "Delivery Status"].astype("string")})
-        counts = temp.groupby("key", dropna=False)["status"].nunique(dropna=True)
-        summary["orders_with_conflicting_non_null_delivery_statuses"] = int((counts > 1).sum())
-        summary["rows_with_missing_delivery_status"] = int(df["Delivery Status"].isna().sum())
-    return summary
 
 
 # ---------------------------------------------------------------------------
@@ -494,6 +399,3 @@ def build_processed(project_root: Path = Path("."), version: str = "v1") -> list
     write_row_funnel(result, meta["processed_sha256"], root)
     return out
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())

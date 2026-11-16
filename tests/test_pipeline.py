@@ -1,6 +1,9 @@
 import pandas as pd
 import pytest
-from pipeline import StageCounts, profile_schema, validate_stage_counts
+
+import pipeline
+from pipeline import StageCounts, validate_stage_counts
+from test_dataco_kpis import raw_line
 
 
 def test_pipeline_stage_conserves_rows():
@@ -14,8 +17,18 @@ def test_pipeline_stage_fails_unexplained_drop():
         validate_stage_counts(StageCounts("remove_invalid", 10, 7, {"missing_order_id": 2}))
 
 
-def test_schema_profile_contains_no_raw_identifiable_values():
-    df = pd.DataFrame({"Customer Name": ["private-person"], "Order Id": [100]})
-    report = profile_schema(df)
-    assert report["rows"] == 1
-    assert "private-person" not in str(report)
+def test_missing_values_are_excluded_with_one_reason_each_not_kept_silently():
+    rows = [raw_line(1, 1), raw_line(2, 2), raw_line(3, 3)]
+    rows[1]["Delivery Status"] = None   # ontbrekende verplichte waarde
+    rows[2]["Order Id"] = None          # ontbrekende sleutel (en daardoor ook een ontbrekende waarde)
+    valid, stage = pipeline.step_validate(pd.DataFrame(rows))
+    # Een rij met twee problemen krijgt maar één reden: de eerste die past.
+    assert stage.primary_exclusion_reasons == {"missing_order_or_line_id": 1, "missing_required_value": 1}
+    assert len(valid) == 1
+    assert validate_stage_counts(stage)
+
+
+def test_analysis_columns_contain_no_personal_data():
+    """Alleen deze kolommen worden uit de ruwe CSV ingelezen (usecols): persoonsgegevens komen nooit in het geheugen."""
+    forbidden = ("customer", "email", "password", "fname", "lname", "street", "zipcode")
+    assert not [c for c in pipeline.ANALYSIS_COLUMNS if any(f in c.lower() for f in forbidden)]

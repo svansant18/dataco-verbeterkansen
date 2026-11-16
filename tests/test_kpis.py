@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import pytest
 
-from analysis.kpis import discount_margin_correlation, safe_percent, safe_ratio
+from analysis.kpis import discount_margin_correlation
 
 
 def _lines(rate, profit):
@@ -26,19 +26,3 @@ def test_spearman_is_one_for_monotone_nonlinear_relation():
     result = discount_margin_correlation(_lines([0.0, 0.05, 0.10, 0.20], [0.01, 0.02, 0.10, 0.90]))
     assert result["spearman"] == pytest.approx(1.0)
     assert result["pearson"] < 1.0
-
-
-def test_weighted_margin_from_totals():
-    assert safe_percent(30, 200) == 15
-
-
-def test_zero_denominator_is_missing_not_zero():
-    assert safe_percent(10, 0) is None
-
-
-def test_nonfinite_is_missing():
-    assert safe_ratio(math.inf, 100) is None
-
-
-def test_invalid_input_is_missing():
-    assert safe_ratio("unknown", 100) is None

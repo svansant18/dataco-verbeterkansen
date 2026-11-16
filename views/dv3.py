@@ -4,7 +4,7 @@ import streamlit as st
 
 from analysis.kpis import (DISCOUNT_BINS, DISCOUNT_LABELS, PROFIT_COL, REVENUE_COL, deterministic_sample,
                            discount_margin_correlation, financial_kpis, margin_by_discount_class)
-from ui.common import (C_MARGIN, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
+from ui.common import (C_MARGIN, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_pct, guard,
                        insight_box, kpi_row, page_heading, style_figure)
 from ui.data import get_scope
 
