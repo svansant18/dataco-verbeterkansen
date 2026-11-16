@@ -1,0 +1,78 @@
+"""Filters en DV4: een filter op markt of categorie zoomt in; de klassen en referenties veranderen niet (logboek 19)."""
+from pathlib import Path
+
+import pytest
+
+import pipeline
+from analysis.kpis import Filters, apply_filters, delivery_kpis, financial_kpis, priority_table, prioritize_selection
+from test_dataco_kpis import raw_line, run_steps
+
+ROOT = Path(__file__).resolve().parents[1]
+RAW = [p for p in [ROOT / "data" / "raw" / "DataCoSupplyChainDataset.csv"] if p.is_file()]
+KEYS = ["Market", "Category Name"]
+
+
+def _segment(rows, market, category, n_orders, total, profit, n_late):
+    start = len(rows) + 1
+    for i in range(n_orders):
+        status = "Late delivery" if i < n_late else "Shipping on time"
+        rows.append(raw_line(start + i, start + i, market=market, category=category, status=status, total=total, profit=profit))
+
+
+def _small_company():
+    """Vier segmenten, elk 4 orders. Uitgerekend: referentie marge 11,2%, vertraagd 50%, mediaan omzet 3.000."""
+    rows = []
+    _segment(rows, "Europe", "Cleats", 4, 1000, 50, 3)   # veel omzet, marge 5%, 75% laat  -> Prioriteit
+    _segment(rows, "Europe", "Shoes", 4, 1000, 200, 0)   # marge 20%, nooit laat           -> Sterk
+    _segment(rows, "LATAM", "Cleats", 4, 500, 10, 4)     # weinig omzet, marge 2%, 100% laat -> Optimaliseren
+    _segment(rows, "LATAM", "Shoes", 4, 100, 30, 1)      # marge 30%, 25% laat             -> Sterk
+    _, clean, scoped, _ = run_steps(rows)
+    return scoped, pipeline.build_order_category_shipping(clean)
+
+
+def _classes(table):
+    return dict(zip(zip(table["Market"], table["Category Name"]), table["priority"]))
+
+
+def test_zooming_in_on_a_category_keeps_the_class_of_every_segment():
+    fin, ocs = _small_company()
+    everything, refs_all, _, _ = prioritize_selection(fin, ocs, min_orders=2)
+    zoomed, refs_zoom, _, _ = prioritize_selection(fin, ocs, category="Cleats", min_orders=2)
+    assert len(everything) == 4 and len(zoomed) == 2
+    assert set(zoomed["Category Name"]) == {"Cleats"}
+    assert refs_zoom == refs_all                                   # dezelfde referenties
+    for segment, klasse in _classes(zoomed).items():
+        assert klasse == _classes(everything)[segment]
+    assert _classes(everything)[("Europe", "Cleats")] == "Prioriteit"
+
+
+def test_filtering_before_the_calculation_would_change_the_class_that_is_why_we_do_not():
+    """Bewijst dat de fixture iets controleert: vroeg filteren geeft Europe/Cleats een andere klasse dan zonder filter."""
+    fin, ocs = _small_company()
+    everything, _, _, _ = prioritize_selection(fin, ocs, min_orders=2)
+    f = Filters(category="Cleats")
+    naive, _ = priority_table(financial_kpis(apply_filters(fin, f), KEYS), delivery_kpis(apply_filters(ocs, f), KEYS), min_orders=2)
+    assert _classes(naive)[("Europe", "Cleats")] != _classes(everything)[("Europe", "Cleats")]
+
+
+def test_zooming_in_on_a_market_keeps_references_and_classes():
+    fin, ocs = _small_company()
+    everything, refs_all, _, _ = prioritize_selection(fin, ocs, min_orders=2)
+    zoomed, refs_zoom, _, _ = prioritize_selection(fin, ocs, market="LATAM", min_orders=2)
+    assert set(zoomed["Market"]) == {"LATAM"} and len(zoomed) == 2
+    assert refs_zoom == refs_all
+    assert all(_classes(zoomed)[s] == _classes(everything)[s] for s in _classes(zoomed))
+
+
+@pytest.mark.skipif(not RAW, reason="no raw CSV under data/raw/")
+def test_real_data_zooming_in_never_changes_a_class():
+    result = pipeline.run_pipeline(RAW[0])
+    fin, ocs = result.financial_rows, result.order_category_shipping
+    everything, _, _, _ = prioritize_selection(fin, ocs)
+    expected = _classes(everything)
+    categories = sorted(fin["Category Name"].unique())
+    choices = [dict(market=m) for m in sorted(fin["Market"].unique())] + [dict(category=c) for c in categories[::5]]
+    for choice in choices:
+        zoomed, _, _, _ = prioritize_selection(fin, ocs, **choice)
+        assert not zoomed.empty, choice
+        assert all(_classes(zoomed)[s] == expected[s] for s in _classes(zoomed)), choice

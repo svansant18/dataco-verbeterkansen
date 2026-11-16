@@ -2,7 +2,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.kpis import delivery_kpis, financial_kpis
+from analysis.kpis import RISK_CLASSES, delivery_kpis, financial_kpis
 from ui.common import (C_PROFIT, C_REVENUE, CENTRAL_QUESTION, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
                        insight_box, kpi_row, style_figure)
 from ui.data import compute_priorities, get_scope
@@ -38,9 +38,9 @@ with right:
     with st.container(border=True):
         st.subheader("Top verbeterprioriteiten")
         enough = table[table["enough_data"]]
-        top = enough.head(3)
+        top = enough[enough["priority"].isin(RISK_CLASSES)].head(3)
         if top.empty:
-            st.info("Geen segment met voldoende data in deze selectie.")
+            st.info("Geen segment met een risico in deze selectie.")
         for i, (_, r) in enumerate(top.iterrows(), start=1):
             st.markdown(f"**{i}. {r['Market']} · {r['Category Name']}** — _{r['priority']}_  \n"
                         f"Omzet {fmt_money(r['revenue'])} · marge {fmt_pct(r['margin_pct'])} · {fmt_pct(r['late_pct'])} vertraagd ({fmt_int(r['eligible_orders'])} orders)  \n"

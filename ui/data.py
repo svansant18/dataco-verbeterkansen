@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from analysis.kpis import Filters, apply_filters, delivery_kpis, financial_kpis, priority_table
+from analysis.kpis import Filters, apply_filters, prioritize_selection
 from pipeline import RAW_FILENAME, PipelineResult, run_pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -76,8 +76,10 @@ def current_filters() -> Filters:
 class Scope:
     result: PipelineResult
     filters: Filters
-    fin: pd.DataFrame   # order lines, in scope, after filters
-    ocs: pd.DataFrame   # order x market x category, after filters
+    fin: pd.DataFrame      # orderregels in de analysebasis, na alle filters
+    ocs: pd.DataFrame      # order x markt x categorie, na alle filters
+    ctx_fin: pd.DataFrame  # idem, maar enkel gefilterd op periode (voor de vaste referentie van DV4)
+    ctx_ocs: pd.DataFrame
 
     @property
     def empty(self) -> bool:
@@ -89,20 +91,20 @@ def get_scope() -> Scope | None:
     if result is None:
         return None
     f = current_filters()
+    period = Filters(date_from=f.date_from, date_to=f.date_to)
+    ctx_fin = apply_filters(result.financial_rows, period)
+    ctx_ocs = apply_filters(result.order_category_shipping, period)
+    selection = Filters(market=f.market, category=f.category)
     return Scope(
         result=result, filters=f,
-        fin=apply_filters(result.financial_rows, f),
-        ocs=apply_filters(result.order_category_shipping, f),
+        fin=apply_filters(ctx_fin, selection), ocs=apply_filters(ctx_ocs, selection),
+        ctx_fin=ctx_fin, ctx_ocs=ctx_ocs,
     )
 
 
 def compute_priorities(scope: Scope):
-    """DV4 reuses the DV1 and DV2 aggregates of the SAME filtered scope (no parallel formulas)."""
-    keys = ["Market", "Category Name"]
-    fin_kpi = financial_kpis(scope.fin, keys)
-    del_kpi = delivery_kpis(scope.ocs, keys)
-    table, refs = priority_table(fin_kpi, del_kpi)
-    return table, refs, fin_kpi, del_kpi
+    """DV4 en Overview: klassen met een vaste referentie; markt en categorie zoomen alleen in (zie prioritize_selection)."""
+    return prioritize_selection(scope.ctx_fin, scope.ctx_ocs, market=scope.filters.market, category=scope.filters.category)
 
 
 def filter_options(result: PipelineResult) -> tuple[list[str], list[str], date, date]:

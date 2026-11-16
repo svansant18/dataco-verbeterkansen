@@ -64,6 +64,7 @@ REVENUE_COL = "Order Item Total"   # net of discount: profit ratio in the source
 PROFIT_COL = "Order Profit Per Order"  # line-level profit (verified: varies within an order)
 
 PRIORITY_ORDER = ("Prioriteit", "Optimaliseren", "Monitoren", "Sterk", "Onvoldoende data")
+RISK_CLASSES = PRIORITY_ORDER[:3]  # de klassen waar iets te verbeteren valt; 'Sterk' en 'Onvoldoende data' horen daar niet bij
 
 
 @dataclass(frozen=True)
@@ -172,9 +173,10 @@ def deterministic_sample(df: pd.DataFrame, n: int = 5000, seed: int = 42) -> pd.
 def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: int = MIN_ORDERS) -> tuple[pd.DataFrame, dict[str, float | None]]:
     """DV4: transparent rules on DV1 + DV2 outputs only (D-010, spec proposal approved).
 
-    Reference margin / late % = weighted totals of the same filtered scope. A segment needs
-    >= min_orders eligible orders AND a known margin. 'Hoog volume' = revenue >= median of the
-    segments that qualify.
+    De referentie voor marge en % vertraagd = het gewogen totaal van de aangeleverde data (zie prioritize_selection).
+    Een segment telt mee bij minstens `min_orders` leverbare orders en een bekende marge.
+    "Hoog volume" = omzet >= de mediaan van de segmenten die meetellen.
+    Prioriteit = hoog volume EN marge onder de referentie EN vertraging boven de referentie.
     """
     keys = ["Market", "Category Name"]
     table = fin_kpi.merge(del_kpi[keys + ["eligible_orders", "late_orders", "late_pct"]], on=keys, how="inner")
@@ -205,3 +207,28 @@ def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: 
     table = table.sort_values(["priority_rank", "revenue", "Market", "Category Name"], ascending=[True, False, True, True]).reset_index(drop=True)
     refs = {"ref_margin_pct": ref_margin, "ref_late_pct": ref_late, "median_revenue_qualifying": None if np.isnan(median_rev) else float(median_rev), "min_orders": min_orders}
     return table, refs
+
+
+def prioritize_selection(
+    ctx_fin: pd.DataFrame, ctx_ocs: pd.DataFrame, *, market: str | None = None, category: str | None = None,
+    min_orders: int = MIN_ORDERS,
+) -> tuple[pd.DataFrame, dict[str, float | None], pd.DataFrame, pd.DataFrame]:
+    """DV4 met een filter = inzoomen (logboek 19).
+
+    De referenties en de mediaan komen uit de hele context (alle markten en categorieën, in de gekozen periode).
+    De filter op markt of categorie bepaalt alleen welke segmenten getoond worden: ze houden dezelfde klasse als
+    zonder filter. Zou je de filter vóór de berekening toepassen, dan vergelijkt een segment zich met het gemiddelde
+    van zijn eigen categorie, en die bestaat soms uit maar 2 segmenten.
+
+    Geeft (tabel met de getoonde segmenten, referenties, fin_kpi en del_kpi van de hele context).
+    """
+    keys = ["Market", "Category Name"]
+    fin_kpi = financial_kpis(ctx_fin, keys)
+    del_kpi = delivery_kpis(ctx_ocs, keys)
+    table, refs = priority_table(fin_kpi, del_kpi, min_orders=min_orders)
+    shown = pd.Series(True, index=table.index)
+    if market:
+        shown &= table["Market"].eq(market)
+    if category:
+        shown &= table["Category Name"].eq(category)
+    return table[shown].reset_index(drop=True), refs, fin_kpi, del_kpi
