@@ -25,7 +25,7 @@ Alle cijfers zijn berekend op `data/raw/DataCoSupplyChainDataset.csv` (ongewijzi
 ## Periode en datatypes
 
 - Orderdatums lopen van **2015-01-01 t/m 2018-01-31**. De laatste order is van 2018-01-31 23:38.
-- Typen in de ruwe data: 29 numerieke kolommen en 24 tekstkolommen. Daaronder zitten 2 datumkolommen als **tekst** (`order date (DateOrders)`, `shipping date (DateOrders)`, formaat `m/d/jjjj u:mm`). De pijplijn zet de twee datumkolommen om naar datetime.
+- Typen in de ruwe data: 29 numerieke kolommen en 24 tekstkolommen. Daaronder zitten 2 datumkolommen als **tekst** (`order date (DateOrders)`, `shipping date (DateOrders)`, formaat `m/d/jjjj u:mm`). De pijplijn leest enkel `order date (DateOrders)` in en zet die om naar datetime; `shipping date` gebruikt ze niet.
 
 ## Ontbrekende waarden
 
@@ -42,7 +42,7 @@ Alle andere kolommen zijn volledig ingevuld. `Product Status` is overal 0 en bev
 
 - **`Market` (5):** LATAM 51 594 · Europe 50 252 · Pacific Asia 41 260 · USCA 25 799 · Africa 11 614 (rijen).
 - **`Category Name`:** 50 productcategorieen, zeer ongelijk verdeeld (Cleats 24 551 rijen, `As Seen on TV!` 68). Sommige namen hadden een spatie achteraan (`'Cameras '`, `'Books '`, `'CDs '`, `'Baby '`).
-- Ook `Order Region` (17 925 waarden), `Product Name` (1 774) en `Department Name` (362) hadden spaties vooraan of achteraan. De pijplijn trimt dat.
+- Ook `Order Region` (17 925 waarden), `Product Name` (1 774) en `Department Name` (362) hadden spaties vooraan of achteraan. De pijplijn leest die drie kolommen niet in; van de kolommen die ze wel inleest, trimt ze de tekst (o.a. `Category Name`).
 - **`Order Status` (9):** COMPLETE 59 491 · PENDING_PAYMENT 39 832 · PROCESSING 21 902 · PENDING 20 227 · CLOSED 19 616 · ON_HOLD 9 804 · SUSPECTED_FRAUD 4 062 · CANCELED 3 692 · PAYMENT_REVIEW 1 893.
 - **`Delivery Status` (4):** Late delivery 98 977 · Advance shipping 41 592 · Shipping on time 32 196 · Shipping canceled 7 754.
 - **`Shipping Mode` (4):** Standard Class 107 752 · Second Class 35 216 · First Class 27 814 · Same Day 9 737.
@@ -69,18 +69,22 @@ Alle andere kolommen zijn volledig ingevuld. `Product Status` is overal 0 en bev
 
 ## Privacy
 
-`Customer Email` en `Customer Password` zijn gemaskeerd (`XXXXXXXXX`). `Customer Fname`, `Customer Lname` en `Customer Street` zijn persoonsgegevens. Ze zijn niet nodig voor de deelvragen en de pijplijn verwijdert ze (stap 3).
+`Customer Email` en `Customer Password` zijn gemaskeerd (`XXXXXXXXX`). `Customer Fname`, `Customer Lname` en `Customer Street` zijn persoonsgegevens. Ze zijn niet nodig voor de deelvragen en de pijplijn leest ze nooit in (`usecols` in `pipeline.py`).
 
-## Welke kolommen horen bij welke deelvraag? (voorstel, nog te bevestigen)
+## Welke kolommen leest de pijplijn?
+
+De pijplijn leest 13 van de 53 kolommen (`ANALYSIS_COLUMNS` in `pipeline.py`). Van de dubbele kolommen leest ze er maar één: `Order Item Total` en `Order Profit Per Order`.
 
 | Deelvraag | Kolommen |
 |---|---|
-| **DV1 Omzet & winst** | `Market`, `Order Region`, `Category Name`, `Order Id`, `Order Item Id`, `order date (DateOrders)`, `Sales`, `Order Item Total`, `Order Profit Per Order`, `Order Item Quantity`, `Order Status` |
-| **DV2 Leverbetrouwbaarheid** | `Order Id`, `Market`, `Category Name`, `Delivery Status`, `Late_delivery_risk`, `Days for shipping (real)`, `Days for shipment (scheduled)`, `Shipping Mode`, `Order Status` |
-| **DV3 Kortingen & marges** | `Order Item Discount`, `Order Item Discount Rate`, `Order Item Profit Ratio`, `Order Profit Per Order`, `Sales`, `Order Item Total`, `Market`, `Category Name` |
+| **DV1 Omzet & winst** | `Market`, `Category Name`, `Order Id`, `Order Item Id`, `order date (DateOrders)`, `Sales`, `Order Item Total`, `Order Profit Per Order`, `Order Status` |
+| **DV2 Leverbetrouwbaarheid** | `Order Id`, `Market`, `Category Name`, `Delivery Status`; `Late_delivery_risk` enkel als controle op `Delivery Status` |
+| **DV3 Kortingen & marges** | `Order Item Discount`, `Order Item Discount Rate`, `Sales`, `Order Item Total`, `Order Profit Per Order`, `Market`, `Category Name` |
 | **DV4 Prioriteiten** | Samengesteld uit DV1 t/m DV3 per markt x categorie |
 
-## Hoe betrouwbaar is een marge op weinig orderlijnen? (onderbouwing van de drempel in DV4)
+Niet ingelezen, hoewel ze in het dataprofiel staan: o.a. `Order Region`, `Order Item Quantity`, `Order Item Profit Ratio`, `Shipping Mode` en de kolommen met verzenddagen.
+
+## Hoe betrouwbaar is een marge op weinig orderlijnen? (achtergrond bij de drempel in DV4)
 
 De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking van **0,467**. Een gemiddelde over *n* lijnen heeft dan een standaardfout van ongeveer 0,467 / wortel(*n*). Dit is een **ruwe schatting**: de app gebruikt de gewogen marge (som winst / som omzet), niet het gewone gemiddelde.
 
@@ -91,11 +95,11 @@ De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking 
 | 300 | ca. 2,7 procentpunt |
 | 1 000 | ca. 1,5 procentpunt |
 
-Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis. Daarom is de drempel in DV4 instelbaar met 300 als standaard. 47 van de 162 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet).
+Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis. Daarom gebruikte de eerste versie van de app (V2.1) een drempel van 300 lijnen, instelbaar. De huidige app gebruikt vast **30 unieke orders** (logboek 5 en 11); deze berekening blijft als achtergrond bij die keuze. 47 van de 162 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet).
 
-## Open vragen (aannames voor `beslissingslogboek.md`)
+## Aannames (beantwoord in `beslissingslogboek.md`)
 
-1. Tellen `CANCELED` en `SUSPECTED_FRAUD` mee in omzet en winst?
-2. Hoe behandelen we "Shipping canceled" in het percentage vertraagde orders (in of uit de noemer)?
-3. Welke maat voor marge: `Order Profit Per Order` / `Order Item Total` (= `Order Item Profit Ratio`) of op `Sales` (voor korting)?
-4. Welke van de dubbele kolommen houden we als standaard?
+1. Tellen `CANCELED` en `SUSPECTED_FRAUD` mee in omzet en winst? Nee: logboek 1.
+2. Hoe behandelen we "Shipping canceled" in het percentage vertraagde orders? Uit de noemer: logboek 15.
+3. Welke maat voor marge? `Order Profit Per Order` / `Order Item Total`, gewogen: logboek 2, 3 en 4.
+4. Welke van de dubbele kolommen houden we? De pijplijn leest enkel `Order Item Total` en `Order Profit Per Order` in (zie hierboven).

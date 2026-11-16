@@ -7,7 +7,7 @@ Streamlit-onderzoeksapp voor Syntra Data Science, Project 1. De app analyseert d
 | Deelvraag | Wat tonen we? | Weergave |
 |---|---|---|
 | **DV1 — Omzet & winst** | Omzet (na korting), winst en gewogen marge per markt en productcategorie | Bars + marge-heatmap |
-| **DV2 — Leverbetrouwbaarheid** | Percentage vertraagde **unieke orders**, per markt en categorie | Marktbars + heatmap |
+| **DV2 — Leverbetrouwbaarheid** | Percentage vertraagde **unieke orders**, per markt en categorie | Bars + heatmap |
 | **DV3 — Kortingen & marges** | Verband tussen kortingspercentage en gerealiseerde marge | Scatter (steekproef) + marge per kortingsklasse |
 | **DV4 — Verbeterprioriteiten** | Welke markt-categoriecombinaties verdienen als eerste onderzoek? | Prioriteitenmatrix + top 5 |
 
@@ -15,6 +15,8 @@ DV4 synthetiseert DV1 tot DV3. De app claimt geen oorzakelijkheid en geen financ
 
 De app heeft zes pagina's: Overview, DV1 tot DV4 en **Data & Methode** (rijentrechter, data-audit, KPI-definities, aannames).
 Bovenaan staan filters voor markt, categorie en periode; er is geen zijbalk.
+Kies je één markt, dan vergelijken de grafieken categorieën (anders markten). Een filter op markt of categorie zoomt in op DV4:
+de referenties en klassen blijven die van het hele bedrijf in de gekozen periode.
 
 ## Starten (Windows, PowerShell)
 
@@ -39,9 +41,9 @@ python -m pytest        # tests
 - `analysis/` — pure KPI-berekeningen (`kpis.py`) en het bewijscontract (`evidence.py`)
 - `ui/` — gedeelde weergave (`common.py`) en data-toegang met cache (`data.py`)
 - `views/` — de zes pagina's
-- `tests/` — pytest voor pijplijn, KPI's, grain, data-levenscyclus en appstructuur
-- `data-exploration.md` — dataprofiel van de ruwe dataset en open vragen
-- `beslissingslogboek.md` — gemaakte keuzes en waarom (V2.1 en V3 samengevoegd)
+- `tests/` — pytest voor de pijplijn, de KPI's, de filters en de pagina's van de app (AppTest)
+- `data-exploration.md` — dataprofiel van de ruwe dataset
+- `beslissingslogboek.md` — gemaakte keuzes en waarom
 - `data/raw/` — ruwe downloads, nooit aanpassen (niet in git). Bronnen: zie `data-exploration.md`
 - `requirements.txt` — enkel wat de app importeert; `requirements-dev.txt` voegt `pytest` toe
 - `.env` — geheimen (niet in git)

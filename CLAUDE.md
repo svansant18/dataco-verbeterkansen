@@ -1,6 +1,6 @@
 # Wat wil je maken? — Streamlit-app over grootste verbeterkansen op gebied van omzet, winstgevendheid en leverbetrouwbaarheid
 
-Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-exploration.md`.
+Missie en vier deelvragen: zie `README.md`. Databronnen en ophaalmethodes: `data-exploration.md`.
 
 ## Afspraken
 
@@ -19,11 +19,12 @@ Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-ex
 3. Een nieuw package? Vraag het EERST aan Steve, met reden en alternatief. Installeer niets zonder OK.
 4. Data in `data/`, geheimen in `.env`. `data/`, `.env` en `__pycache__/` staan in `.gitignore`.
    `data/raw/` bevat de ruwe downloads en is **read-only voor Claude**: nooit aanpassen of
-   overschrijven (`deny`-regel in `.claude/settings.json`). Eventuele afgeleide data komt in `data/processed/`.
+   overschrijven (`deny`-regel in `.claude/settings.json`). De app schrijft zelf niets weg; zou ze ooit afgeleide data
+   bewaren, dan in `data/processed/`.
 5. Standaardomgeving is de conda-environment `syntra-ds` (geen eigen `.venv`). Python:
    `C:\Users\steve\anaconda3\envs\syntra-ds\python.exe`.
-6. Git-repo, branch `main`. Werk aan grote wijzigingen op een aparte branch (de ombouw naar één app gebeurde op
-   `v3-functioneel`) en merge pas na akkoord. Commit elke werkende stap met een duidelijke boodschap, en nooit
+6. Git-repo, branch `main`. Werk aan grote wijzigingen op een aparte branch en merge pas na akkoord
+   (met een tag op de vorige versie, zodat je altijd terug kan). Commit elke werkende stap met een duidelijke boodschap, en nooit
    zonder dat Tim de wijziging zag.
 7. Houd `README.md` kort en deze `CLAUDE.md` in sync met de afspraken.
 8. **Geen zijbalk** (`st.sidebar`): alle bediening, filters en uitleg staan in de app zelf (hoofdpagina,
