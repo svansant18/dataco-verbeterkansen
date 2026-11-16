@@ -36,7 +36,7 @@ class Filters:
 
 
 def apply_filters(df: pd.DataFrame, f: Filters, *, date_col: str = "order_date") -> pd.DataFrame:
-    """One filter contract shared by every KPI, chart and table (filter consistency)."""
+    """Eén filtercontract voor elke KPI, grafiek en tabel, zodat alles dezelfde selectie toont. De einddag telt volledig mee."""
     mask = pd.Series(True, index=df.index)
     if f.market:
         mask &= df["Market"].eq(f.market)
@@ -50,9 +50,9 @@ def apply_filters(df: pd.DataFrame, f: Filters, *, date_col: str = "order_date")
 
 
 def financial_kpis(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
-    """Revenue, profit, weighted margin (= sum profit / sum revenue), lines and unique orders.
+    """Omzet, winst, gewogen marge (= som winst / som omzet), orderregels en unieke orders.
 
-    The margin is NEVER a mean of line margins; a zero revenue gives NaN (N/B).
+    De marge is NOOIT een gemiddelde van regelmarges; omzet <= 0 geeft NaN (N/B).
     """
     keys = by or []
     if keys:
@@ -70,9 +70,9 @@ def financial_kpis(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFram
 
 
 def delivery_kpis(ocs: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
-    """Late % = late eligible orders / eligible orders; each order counted once per group (D-008).
+    """% vertraagd = vertraagde leverbare orders / leverbare orders; elke order telt één keer per groep (D-008).
 
-    Canceled shipments are removed from the denominator and reported separately.
+    Geannuleerde zendingen gaan uit de noemer en worden apart gerapporteerd.
     """
     keys = by or []
     eligible = ocs[ocs["delivery_eligible"]]
@@ -126,11 +126,12 @@ def deterministic_sample(df: pd.DataFrame, n: int = 5000, seed: int = 42) -> pd.
 
 
 def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: int = MIN_ORDERS) -> tuple[pd.DataFrame, dict[str, float | None]]:
-    """DV4: transparent rules on DV1 + DV2 outputs only (D-010, spec proposal approved).
+    """DV4: duidelijke regels op de uitkomsten van DV1 en DV2 (D-010), zonder score.
 
-    Reference margin / late % = weighted totals of the same filtered scope. A segment needs
-    >= min_orders eligible orders AND a known margin. 'Hoog volume' = revenue >= median of the
-    segments that qualify.
+    De referentie voor marge en % vertraagd = het gewogen totaal van dezelfde gefilterde selectie.
+    Een segment telt mee bij minstens `min_orders` leverbare orders en een bekende marge.
+    "Hoog volume" = omzet >= de mediaan van de segmenten die meetellen.
+    Prioriteit = hoog volume EN marge onder de referentie EN vertraging boven de referentie.
     """
     keys = ["Market", "Category Name"]
     table = fin_kpi.merge(del_kpi[keys + ["eligible_orders", "late_orders", "late_pct"]], on=keys, how="inner")

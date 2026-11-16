@@ -94,7 +94,10 @@ def read_analysis_source(path: Path, encoding: str = SOURCE_ENCODING) -> pd.Data
 
 
 def _exclusive_reasons(conditions: list[tuple[str, pd.Series]], index: pd.Index) -> pd.Series:
-    """Assign each row at most ONE reason: the first matching condition wins."""
+    """Geef elke rij hoogstens ÉÉN reden: de eerste voorwaarde die past wint.
+
+    Zo tellen de redenen in de rijentrechter exact op tot het aantal weggevallen rijen.
+    """
     reason = pd.Series("", index=index, dtype="object")
     for name, mask in conditions:
         reason = reason.mask((reason == "") & mask, name)
@@ -110,7 +113,10 @@ def _stage(name: str, df: pd.DataFrame, reason: pd.Series) -> tuple[pd.DataFrame
 
 
 def step_validate(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
-    """Stage 2: keys, required values, parseable order date, unique order line."""
+    """Stap 2: controleer de sleutels, de verplichte waarden, een leesbare orderdatum en unieke orderregels.
+
+    Een rij die faalt valt weg met één reden (zie _exclusive_reasons).
+    """
     missing_cols = [c for c in REQUIRED_NOT_NULL if c not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required source columns: {missing_cols}")
@@ -129,7 +135,10 @@ def step_validate(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
 
 
 def step_clean(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
-    """Stage 3: retype/trim only. Rows are preserved; unknown statuses stop the run (no guessing)."""
+    """Stap 3: enkel types zetten en tekst trimmen. Er vallen geen rijen weg.
+
+    Een onbekende leverstatus stopt de run: we gokken niet wat die betekent.
+    """
     out = df.copy()
     for col in ("Market", "Category Name", "Delivery Status", "Order Status"):
         out[col] = out[col].astype("string").str.strip()
@@ -148,7 +157,7 @@ def step_clean(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
 
 
 def step_scope(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
-    """Stage 4 (D-007): leave out orders that never realised revenue."""
+    """Stap 4 (D-007): laat orders weg die nooit omzet opleverden (geannuleerd of vermoedelijke fraude)."""
     reason = _exclusive_reasons(
         [(label, df["Order Status"].eq(status)) for status, label in EXCLUDED_ORDER_STATUSES.items()],
         df.index,
@@ -157,7 +166,11 @@ def step_scope(df: pd.DataFrame) -> tuple[pd.DataFrame, StageCounts]:
 
 
 def build_order_category_shipping(clean: pd.DataFrame) -> pd.DataFrame:
-    """Order x category grain (D-008). Raises when one order carries conflicting statuses."""
+    """Grain 'order × categorie' (D-008): elke order telt één keer per categorie waarin hij zit.
+
+    Geeft een fout als één order tegenstrijdige leverstatussen of meer dan één markt heeft:
+    we kiezen niet stil de eerste.
+    """
     conflict = clean.groupby("Order Id")["Delivery Status"].nunique()
     if (conflict > 1).any():
         raise ValueError(f"{int((conflict > 1).sum())} orders with conflicting Delivery Status; no silent first()")
@@ -222,7 +235,7 @@ def build_quality_report(raw: pd.DataFrame, financial: pd.DataFrame) -> dict[str
 
 
 def run_pipeline(source: Path, encoding: str = SOURCE_ENCODING) -> PipelineResult:
-    """Run the full, read-only pipeline on one raw CSV; raw hash is checked before and after."""
+    """Draai de hele pijplijn op één ruwe CSV (alleen lezen). De hash van de bron wordt vóór en na gecontroleerd."""
     source = Path(source)
     hash_before = file_sha256(source)
     raw = read_analysis_source(source, encoding)
