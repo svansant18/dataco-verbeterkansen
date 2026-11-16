@@ -49,9 +49,9 @@ with right:
             customdata=classes[["lines", "revenue"]], text=[fmt_pct(v) for v in classes["margin_pct"]], textposition="outside",
             hovertemplate="Klasse %{x}<br>Marge %{y:.1f}%<br>%{customdata[0]:,} regels<extra></extra>",
         ))
-        fig.update_layout(xaxis_title="Kortingsklasse (VOORSTEL, nog niet goedgekeurd)", yaxis_title="Gewogen marge (%)")
+        fig.update_layout(xaxis_title="Kortingsklasse", yaxis_title="Gewogen marge (%)")
         st.plotly_chart(style_figure(fig), width="stretch")
-        st.caption("Klassegrenzen zijn een voorstel (D-009 open). Aantallen per klasse staan in de hover en in de tabel hieronder.")
+        st.caption("Klassegrenzen: zie D-009 in het logboek (goedgekeurd). Aantallen per klasse staan in de hover en in de tabel hieronder.")
 
 bullets = []
 valid = classes.dropna(subset=["margin_pct"])
@@ -77,7 +77,7 @@ evidence_panels(
      "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"], input_rows=n_in, analysis_rows=len(fin))},
     scope, detail, file_stem="dv3_kortingsklassen",
     notes=(f"Kortingseenheid geaudit: min {scope.result.quality_report['discount_rate_min']}, max {scope.result.quality_report['discount_rate_max']} → fractie 0–1 ({scope.result.quality_report['discount_rate_unit']}); in de grafiek ×100. Geen dubbele omrekening.",
-           f"Klassegrenzen (fractie): {list(DISCOUNT_BINS[1:])} → {list(DISCOUNT_LABELS)}. VOORSTEL, goedkeuring student vereist (D-009).",
+           f"Klassegrenzen (fractie): {list(DISCOUNT_BINS[1:])} → {list(DISCOUNT_LABELS)}. Goedgekeurd (D-009, logboek 9).",
            "Gewogen kortingspercentage = som(Order Item Discount) / som(Sales); dit verschilt van het gemiddelde van regelpercentages."),
     sample=fin[["Order Id", "Order Item Id", "Market", "Category Name", "Sales", "Order Item Discount", "Order Item Discount Rate", "Order Item Total", "Order Profit Per Order"]],
 )
