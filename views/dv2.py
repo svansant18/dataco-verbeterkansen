@@ -1,6 +1,5 @@
 """DV2 — Leverbetrouwbaarheid: % vertraagde orders on unique-order grain."""
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -55,41 +54,20 @@ with left:
             st.caption("As start bij 0 om verschillen niet te overdrijven. Teller/noemer staan in de hover.")
 with right:
     with st.container(border=True):
-        if single:
-            st.subheader("% vertraagd per categorie")
-            st.info(NOTHING_TO_COMPARE)
-        elif dim == "Category Name":
-            # Eén markt gekozen: een heatmap zou één kolom zijn. Daarom een balk per categorie.
-            st.subheader("% vertraagd per categorie")
-            cat = by_dim.assign(p=by_dim["late_pct"].where(by_dim["eligible_orders"] >= MIN_ORDERS))
-            cat = cat.sort_values("eligible_orders", ascending=False)
-            fig = go.Figure(go.Bar(
-                y=cat["Category Name"], x=cat["p"], orientation="h", marker_color=C_LATE,
-                customdata=cat[["late_orders", "eligible_orders"]],
-                hovertemplate="%{y}<br>%{x:.1f}% vertraagd<br>%{customdata[0]:,} van %{customdata[1]:,} orders<extra></extra>",
-            ))
-            if pd.notna(total["late_pct"]):
-                fig.add_vline(x=total["late_pct"], line_dash="dot", line_color="gray", annotation_text="selectie")
-            fig.update_layout(xaxis_title="% vertraagde orders", xaxis_range=[0, 100])
-            fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(fig, height=max(380, 22 * len(cat) + 80)), width="stretch")
-            st.caption(f"Categorieën met minder dan {MIN_ORDERS} orders zijn leeg gelaten (onvoldoende data): "
-                       f"{int(cat['p'].isna().sum())} van {len(cat)} categorieën. De stippellijn is het % van de hele selectie.")
-        else:
-            st.subheader("% vertraagd per markt × categorie")
-            pct = by_mc["late_pct"].where(enough)
-            piv = by_mc.assign(p=pct).pivot(index="Category Name", columns="Market", values="p")
-            cnt = by_mc.pivot(index="Category Name", columns="Market", values="eligible_orders")
-            order = by_mc.groupby("Category Name")["eligible_orders"].sum().sort_values(ascending=False).index
-            piv, cnt = piv.reindex(order), cnt.reindex(order)
-            heat = go.Figure(go.Heatmap(
-                z=piv.values, x=piv.columns, y=piv.index, colorscale="Oranges", colorbar=dict(title="% laat"),
-                customdata=cnt.values, hovertemplate="%{y} · %{x}<br>%{z:.1f}% vertraagd<br>%{customdata:,} orders<extra></extra>",
-            ))
-            heat.update_yaxes(autorange="reversed")
-            st.plotly_chart(style_figure(heat, height=max(380, 22 * len(piv) + 80)), width="stretch")
-            hidden = int((~enough).sum())
-            st.caption(f"Cellen met minder dan {MIN_ORDERS} orders zijn leeg gelaten (onvoldoende data): {hidden} van {len(by_mc)} combinaties.")
+        st.subheader("% vertraagd per markt × categorie")
+        pct = by_mc["late_pct"].where(enough)
+        piv = by_mc.assign(p=pct).pivot(index="Category Name", columns="Market", values="p")
+        cnt = by_mc.pivot(index="Category Name", columns="Market", values="eligible_orders")
+        order = by_mc.groupby("Category Name")["eligible_orders"].sum().sort_values(ascending=False).index
+        piv, cnt = piv.reindex(order), cnt.reindex(order)
+        heat = go.Figure(go.Heatmap(
+            z=piv.values, x=piv.columns, y=piv.index, colorscale="Oranges", colorbar=dict(title="% laat"),
+            customdata=cnt.values, hovertemplate="%{y} · %{x}<br>%{z:.1f}% vertraagd<br>%{customdata:,} orders<extra></extra>",
+        ))
+        heat.update_yaxes(autorange="reversed")
+        st.plotly_chart(style_figure(heat, height=max(380, 22 * len(piv) + 80)), width="stretch")
+        hidden = int((~enough).sum())
+        st.caption(f"Cellen met minder dan {MIN_ORDERS} orders zijn leeg gelaten (onvoldoende data): {hidden} van {len(by_mc)} combinaties.")
 
 bullets = []
 if not single and len(by_dim_solid) > 1:

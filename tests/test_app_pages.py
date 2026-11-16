@@ -23,6 +23,16 @@ def _first_chart_x(at):
     return json.loads(spec)["data"][0]["x"]
 
 
+def _chart_types(at):
+    """Het soort grafiek (bar, heatmap, ...) van elke plotly-grafiek op de pagina, van boven naar onder."""
+    kinds = []
+    for chart in at.get("plotly_chart"):
+        proto = chart.proto
+        spec = getattr(proto, "spec", None) or proto.figure.spec
+        kinds.append(json.loads(spec)["data"][0]["type"])
+    return kinds
+
+
 def _all_pages_run(at):
     for page in PAGES:
         at.switch_page(page).run()
@@ -65,3 +75,15 @@ def test_dv4_reference_stays_fixed_when_filtering_on_a_category():
     at.switch_page("views/dv4.py").run()
     shown = {m.label: m.value for m in at.metric}
     assert shown["Referentie marge · vertraging"] == unfiltered["Referentie marge · vertraging"]   # vaste referentie
+
+
+def test_the_heatmap_stays_when_a_market_is_chosen():
+    """De heatmap rechts op DV1 en DV2 blijft staan, ook met een marktfilter (logboek 22)."""
+    at = _open()
+    for market in (None, "Europe"):
+        if market:
+            at.selectbox(key="global_market").select(market)
+            at.run()
+        for page in ("views/dv1.py", "views/dv2.py"):
+            at.switch_page(page).run()
+            assert _chart_types(at)[:2] == ["bar", "heatmap"], (market, page)
