@@ -23,7 +23,7 @@ kpi_row([
     ("Gewogen kortingspercentage", fmt_pct(weighted_discount), "100 × som(Order Item Discount) / som(Sales) — gewogen op bruto verkoopwaarde"),
     ("Gewogen winstmarge", fmt_pct(total["margin_pct"]), "100 × som winst / som omzet (na korting) · K-MARGIN"),
     ("Correlatie (Spearman)", "N/B" if rho is None else f"{rho:+.2f}".replace(".", ","),
-     f"Rangcorrelatie korting vs. regelmarge op {fmt_int(corr['n'])} orderregels. Pearson: {'N/B' if corr['pearson'] is None else format(corr['pearson'], '+.2f')}. Samenhang, geen oorzaak."),
+     f"Rangcorrelatie korting vs. regelmarge op {fmt_int(corr['n'])} orderregels. Pearson: {'N/B' if corr['pearson'] is None else format(corr['pearson'], '+.2f').replace('.', ',')}. Samenhang, geen oorzaak."),
     ("Orderregels", fmt_int(len(fin)), "Waarnemingen na filters (grain: orderregel)"),
 ])
 st.caption("**Samenhang, geen oorzakelijk bewijs.** Korting en marge kunnen allebei door productmix of markt worden bepaald.")

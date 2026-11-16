@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from analysis.kpis import RISK_CLASSES
-from ui.common import (C_LATE, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
+from ui.common import (C_LATE, C_MARGIN, C_PROFIT, QUESTIONS, evidence_panels, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
                        kpi_row, page_heading, style_figure)
 from ui.data import compute_priorities, get_scope
 
@@ -28,7 +28,7 @@ kpi_row([
 if scope.filters.market or scope.filters.category:
     st.caption("Een filter op markt of categorie zoomt in: de referenties en de klassen blijven die van het hele bedrijf in de gekozen periode.")
 
-STYLE = {"Prioriteit": ("#DC2626", "diamond"), "Optimaliseren": (C_LATE, "square"), "Monitoren": ("#7C3AED", "triangle-up"), "Sterk": ("#0D9488", "circle")}
+STYLE = {"Prioriteit": ("#DC2626", "diamond"), "Optimaliseren": (C_LATE, "square"), "Monitoren": (C_MARGIN, "triangle-up"), "Sterk": (C_PROFIT, "circle")}
 left, right = st.columns([1.15, 0.95])
 with left:
     with st.container(border=True):

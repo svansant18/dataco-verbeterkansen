@@ -18,7 +18,8 @@ dlv = delivery_kpis(scope.ocs).iloc[0]
 dim, dim_one, _ = comparison_dimension(scope.filters)   # per markt, of per categorie als je één markt kiest
 single = nothing_to_compare(scope.filters)                # één markt én één categorie: niets te vergelijken
 by_dim = financial_kpis(scope.fin, [dim]).sort_values("revenue", ascending=True)
-table, refs, fin_kpi, del_kpi = compute_priorities(scope)
+table, *_ = compute_priorities(scope)   # Overview gebruikt enkel de tabel, niet de referenties
+enough = table[table["enough_data"]]
 
 kpi_row([
     ("Omzet (netto)", fmt_money(fin["revenue"]), "Som Order Item Total · zie DV1"),
@@ -43,7 +44,6 @@ with left:
 with right:
     with st.container(border=True):
         st.subheader("Top verbeterprioriteiten")
-        enough = table[table["enough_data"]]
         top = enough[enough["priority"].isin(RISK_CLASSES)].head(3)
         if top.empty:
             st.info("Geen segment met een risico in deze selectie.")

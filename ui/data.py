@@ -27,7 +27,8 @@ def raw_csv_path() -> Path | None:
 
 @st.cache_resource(show_spinner="Pipeline draait op de brondata (read-only)…")
 def _cached_result(path_str: str, modified_ns: int) -> PipelineResult:
-    _ = modified_ns  # a changed file invalidates the cache
+    # modified_ns wordt hier niet gebruikt, maar hoort bij de cache-sleutel: verandert het bestand, dan draait de pijplijn opnieuw.
+    _ = modified_ns
     return run_pipeline(Path(path_str))
 
 

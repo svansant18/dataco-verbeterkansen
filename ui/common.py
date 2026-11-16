@@ -50,6 +50,14 @@ def fmt_pct(x, digits: int = 1) -> str:
     return f"{float(x):.{digits}f}%".replace(".", ",") if _ok(x) else NB
 
 
+def fmt_num(x) -> str:
+    """Een getal voor in de uitleg: hele getallen zonder decimalen, anders twee. Ontbrekend wordt een streepje."""
+    if not _ok(x):
+        return "—"
+    x = float(x)
+    return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if x != int(x) else fmt_int(x)
+
+
 # ---- layout ---------------------------------------------------------------------------------------
 def page_heading(title: str, question: str) -> None:
     st.title(title)
@@ -125,10 +133,3 @@ def evidence_panels(
         if sample is not None and not sample.empty:
             st.markdown("**Voorbeeldregels uit de selectie** (eerste 10, enkel zakelijke kolommen):")
             st.dataframe(sample.head(10), width="stretch", hide_index=True)
-
-
-def fmt_num(x) -> str:
-    if not _ok(x):
-        return "—"
-    x = float(x)
-    return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if x != int(x) else fmt_int(x)

@@ -41,23 +41,22 @@ def validate_stage_counts(stage: StageCounts) -> bool:
 
 
 def file_sha256(path: Path) -> str:
-    """Compute a source/output fingerprint without changing the file."""
+    """Bereken de SHA-256 van een bestand (een vingerafdruk), zonder het te wijzigen."""
     digest = hashlib.sha256()
-    with Path(path).open("rb") as file:
+    with path.open("rb") as file:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
 # ---------------------------------------------------------------------------
-# DataCo analysis pipeline (V9). Pure functions, no Streamlit.
-# Decisions: D-006..D-010 in beslissingslogboek.md (student answers 2026-11-16).
+# De analysepijplijn: pure functies, zonder Streamlit.
+# De keuzes erachter (D-006 t/m D-011) staan in beslissingslogboek.md.
 # ---------------------------------------------------------------------------
 
 SOURCE_ENCODING = "latin1"
 RAW_FILENAME = "DataCoSupplyChainDataset.csv"  # data/raw bevat ook de omschrijving en de access logs: die zijn buiten scope
 DATE_FORMAT = "%m/%d/%Y %H:%M"
-DECISION_IDS = ["D-006", "D-007", "D-008", "D-010"]
 
 # PII columns (Customer Email, Customer Password, names, addresses ...) are never
 # read: only the columns below are loaded from the raw CSV.
@@ -249,11 +248,7 @@ def run_pipeline(source: Path, encoding: str = SOURCE_ENCODING) -> PipelineResul
     manifest = {
         "source_file": source.name,
         "source_sha256": hash_before,
-        "raw_hash_unchanged_after_run": True,
-        "source_rows": int(len(raw)),
-        "encoding": encoding,
-        "columns_loaded": list(ANALYSIS_COLUMNS),
-        "decision_ids": DECISION_IDS,
+        "raw_hash_unchanged_after_run": True,  # altijd waar: bij een verschil stopt de run hierboven met een fout
     }
     return PipelineResult(
         financial_rows=financial.reset_index(drop=True),

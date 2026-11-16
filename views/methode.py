@@ -1,15 +1,12 @@
-"""Data & Methode: the evidence centre. Everything here is read from the real pipeline run."""
-from pathlib import Path
-
+"""Data & Methode: het bewijscentrum. Alles hier komt uit de echte pijplijn-run."""
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 from analysis.evidence import KPI_REGISTER
 from ui.common import fmt_int, guard, style_figure
-from ui.data import get_scope
+from ui.data import ROOT, get_scope
 
-ROOT = Path(__file__).resolve().parents[1]
 st.title("Data & Methode")
 st.caption("Van ruwe DataCo-data tot controleerbare KPI's — pipeline, kwaliteit, definities en beslissingen")
 scope = guard(get_scope())
