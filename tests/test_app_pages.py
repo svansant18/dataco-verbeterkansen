@@ -117,3 +117,23 @@ def test_a_choice_that_becomes_impossible_falls_back_to_all():
     at.run()
     assert at.selectbox(key="global_category").value == "Alle categorieën"
     assert not at.exception
+
+
+def test_the_app_works_without_the_raw_csv_and_shows_the_same_numbers(monkeypatch):
+    """Online staat de ruwe CSV er niet. De app valt dan terug op de publicatiebundel en toont dezelfde KPI-kaarten."""
+    def numbers():
+        at = _open()
+        found = {}
+        for market in (None, "Europe"):
+            if market:
+                at.selectbox(key="global_market").select(market)
+                at.run()
+            for page in PAGES:
+                at.switch_page(page).run()
+                assert not at.exception, (market, page)
+                found[(market, page)] = [(m.label, m.value) for m in at.metric]
+        return found
+
+    with_raw = numbers()
+    monkeypatch.setenv("DATACO_BRON", "bundel")
+    assert numbers() == with_raw

@@ -1,0 +1,2 @@
+# De publicatiebundel is binair voor git: de bytes mogen niet veranderen (de SHA-256 in het herkomstbestand moet kloppen op elk systeem).
+data/published/* -text

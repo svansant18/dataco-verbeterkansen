@@ -1,0 +1,23 @@
+{
+  "source_file": "DataCoSupplyChainDataset.csv",
+  "source_sha256": "fa6d022ed437155e1a2f0378710602848703c8a7f203f7ff5d77805bf8480aa6",
+  "processed_file": "dataco_order_category_shipping_v1.csv",
+  "processed_sha256": "bf2ec42936a13c7049ab3c75a7971e361bf1851f050f1f7c61dc777e164c2436",
+  "input_rows": 180519,
+  "output_rows": 159477,
+  "transformation_steps": [
+    "Bron ingelezen",
+    "Validatie",
+    "Opschonen",
+    "Analysebasis (omzet/winst)",
+    "Order x categorie-grain (unieke orders)"
+  ],
+  "decision_ids": [
+    "D-006",
+    "D-007",
+    "D-008",
+    "D-010"
+  ],
+  "created_at_utc": "2026-11-16T20:27:35.538356+00:00",
+  "status": "PUBLICATION_BUNDLE"
+}

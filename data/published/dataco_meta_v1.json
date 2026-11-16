@@ -1,0 +1,131 @@
+{
+  "version": "v1",
+  "created_at_utc": "2026-11-16T20:27:35.540092+00:00",
+  "tables": {
+    "financial_lines": {
+      "file": "dataco_financial_lines_v1.csv",
+      "sha256": "200ef9c2f702cbda1321c4d09c3333457cf57d8ab771aaea0b811a2c53b4f40e",
+      "rows": 172765,
+      "columns": [
+        "Delivery Status",
+        "Late_delivery_risk",
+        "Category Name",
+        "Market",
+        "order date (DateOrders)",
+        "Order Id",
+        "Order Item Discount",
+        "Order Item Discount Rate",
+        "Order Item Id",
+        "Sales",
+        "Order Item Total",
+        "Order Profit Per Order",
+        "Order Status",
+        "order_date",
+        "is_late",
+        "delivery_eligible"
+      ]
+    },
+    "order_category_shipping": {
+      "file": "dataco_order_category_shipping_v1.csv",
+      "sha256": "bf2ec42936a13c7049ab3c75a7971e361bf1851f050f1f7c61dc777e164c2436",
+      "rows": 159477,
+      "columns": [
+        "Order Id",
+        "Market",
+        "Category Name",
+        "order_date",
+        "delivery_status",
+        "is_late",
+        "delivery_eligible"
+      ]
+    }
+  },
+  "stage_audit": [
+    {
+      "name": "Bron ingelezen",
+      "rows_in": 180519,
+      "rows_out": 180519,
+      "primary_exclusion_reasons": {}
+    },
+    {
+      "name": "Validatie",
+      "rows_in": 180519,
+      "rows_out": 180519,
+      "primary_exclusion_reasons": {}
+    },
+    {
+      "name": "Opschonen",
+      "rows_in": 180519,
+      "rows_out": 180519,
+      "primary_exclusion_reasons": {}
+    },
+    {
+      "name": "Analysebasis (omzet/winst)",
+      "rows_in": 180519,
+      "rows_out": 172765,
+      "primary_exclusion_reasons": {
+        "order_status_suspected_fraud": 4062,
+        "order_status_canceled": 3692
+      }
+    }
+  ],
+  "grain_audit": {
+    "order_lines": 180519,
+    "unique_orders": 65752,
+    "unique_orders_in_financial_scope": 62897,
+    "unique_orders_delivery_eligible": 62897,
+    "orders_with_multiple_lines": 45902,
+    "orders_spanning_multiple_categories": 44563,
+    "order_category_pairs": 159477,
+    "sum_of_category_orders_exceeds_unique_orders_by": 93725,
+    "orders_with_conflicting_delivery_status": 0,
+    "orders_with_varying_profit_value_across_lines": 45902,
+    "profit_field_is_line_level_not_repeated_order_total": true,
+    "orders_with_multiple_order_dates": 0,
+    "financial_scope_equals_delivery_eligible_orders": true,
+    "market_category_combinations_financial": 162
+  },
+  "quality_report": {
+    "category_names_with_surrounding_whitespace": 4,
+    "category_names_merged_by_trimming": 0,
+    "late_delivery_risk_matches_delivery_status_rows": 180519,
+    "late_delivery_risk_mismatch_rows": 0,
+    "zero_or_negative_revenue_lines_in_scope": 0,
+    "negative_profit_lines_in_scope_kept": 32295,
+    "discount_rate_min": 0.0,
+    "discount_rate_max": 0.25,
+    "discount_rate_unit": "fraction 0-1",
+    "order_period_start": "2015-01-01",
+    "order_period_end": "2018-01-31",
+    "pii_columns_loaded": 0
+  },
+  "source_manifest": {
+    "source_file": "DataCoSupplyChainDataset.csv",
+    "source_sha256": "fa6d022ed437155e1a2f0378710602848703c8a7f203f7ff5d77805bf8480aa6",
+    "raw_hash_unchanged_after_run": true,
+    "source_rows": 180519,
+    "encoding": "latin1",
+    "columns_loaded": [
+      "Order Id",
+      "Order Item Id",
+      "Market",
+      "Category Name",
+      "order date (DateOrders)",
+      "Sales",
+      "Order Item Total",
+      "Order Profit Per Order",
+      "Order Item Discount",
+      "Order Item Discount Rate",
+      "Delivery Status",
+      "Late_delivery_risk",
+      "Order Status"
+    ],
+    "decision_ids": [
+      "D-006",
+      "D-007",
+      "D-008",
+      "D-010"
+    ]
+  },
+  "privacy": "Alleen analysekolommen (zie ANALYSIS_COLUMNS in pipeline.py); geen namen, adressen, e-mails of wachtwoorden."
+}

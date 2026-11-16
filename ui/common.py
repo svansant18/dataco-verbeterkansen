@@ -70,7 +70,7 @@ def filter_banner(scope: Scope, population: str) -> None:
 def guard(scope: Scope | None) -> Scope:
     """Stop the page with a clear message instead of showing fake or broken output."""
     if scope is None:
-        st.warning("Geen bron gevonden: plaats precies één DataCo-CSV onder `data/raw/`. Er worden geen cijfers getoond.")
+        st.warning("Geen bron gevonden: plaats de DataCo-CSV onder `data/raw/` of de publicatiebundel onder `data/published/`. Er worden geen cijfers getoond.")
         st.stop()
     if scope.empty:
         st.info("Geen data voor deze filtercombinatie (alle KPI's = N/B). Pas de filters aan of reset ze bovenaan.")

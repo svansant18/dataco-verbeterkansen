@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ui.data import ALL_CATEGORIES, ALL_MARKETS, dependent_options, filter_options, get_result
+from ui.data import ALL_CATEGORIES, ALL_MARKETS, data_source, dependent_options, filter_options, get_result
 
 st.set_page_config(page_title="DataCo · Supply Chain Insights", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
 
@@ -61,7 +61,8 @@ else:
     col2.selectbox("Productcategorie", [ALL_CATEGORIES, *categories], key="global_category")
     col3.date_input("Orderdatum (periode)", min_value=d_min, max_value=d_max, key="global_period", format="DD/MM/YYYY")
     with col4:
-        st.caption("**Datasetstatus:** echte DataCo-data · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
+        bron = "ruwe CSV" if data_source() == "ruwe CSV" else "publicatiebundel, zonder persoonsgegevens"
+        st.caption(f"**Datasetstatus:** echte DataCo-data ({bron}) · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
         st.button("Reset filters", on_click=reset_filters, width="stretch")
 
 # Six logical subpages inside one application, never six Streamlit processes.

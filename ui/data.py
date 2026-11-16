@@ -5,6 +5,7 @@ No business logic lives here: filtering and KPIs come from analysis.kpis, the da
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -13,7 +14,7 @@ import pandas as pd
 import streamlit as st
 
 from analysis.kpis import Filters, apply_filters, available_options, prioritize_selection
-from pipeline import RAW_FILENAME, PipelineResult, run_pipeline
+from pipeline import RAW_FILENAME, PipelineResult, load_published, published_meta_path, run_pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
 ALL_MARKETS = "Alle markten"
@@ -21,32 +22,55 @@ ALL_CATEGORIES = "Alle categorieën"
 
 
 def raw_csv_path() -> Path | None:
-    """data/raw bevat meerdere CSV's (o.a. de omschrijving en de access logs): we gebruiken enkel de hoofdset."""
+    """data/raw bevat meerdere CSV's (o.a. de omschrijving en de access logs): we gebruiken enkel de hoofdset.
+
+    Zet je de omgevingsvariabele DATACO_BRON op "bundel", dan negeert de app de ruwe CSV (om de online versie lokaal na te bootsen).
+    """
+    if os.environ.get("DATACO_BRON") == "bundel":
+        return None
     path = ROOT / "data" / "raw" / RAW_FILENAME
     return path if path.is_file() else None
 
 
 @st.cache_resource(show_spinner="Pipeline draait op de brondata (read-only)…")
 def _cached_result(path_str: str, modified_ns: int) -> PipelineResult:
-    _ = modified_ns  # a changed file invalidates the cache
+    # modified_ns wordt hier niet gebruikt, maar hoort bij de cache-sleutel: verandert het bestand, dan draait de pijplijn opnieuw.
+    _ = modified_ns
     return run_pipeline(Path(path_str))
+
+
+@st.cache_resource(show_spinner="Publicatiebundel wordt ingelezen…")
+def _cached_published(meta_str: str, modified_ns: int) -> PipelineResult | None:
+    _ = (meta_str, modified_ns)  # cache-sleutel, zoals hierboven
+    return load_published(ROOT)
+
+
+def data_source() -> str:
+    """Waar komen de cijfers vandaan: de ruwe CSV (lokaal), de publicatiebundel (online) of nergens."""
+    if raw_csv_path() is not None:
+        return "ruwe CSV"
+    return "publicatiebundel" if published_meta_path(ROOT) is not None else "geen"
 
 
 def get_result() -> PipelineResult | None:
     path = raw_csv_path()
-    if path is None:
+    if path is not None:
+        return _cached_result(str(path), path.stat().st_mtime_ns)
+    meta = published_meta_path(ROOT)   # geen ruwe CSV (bijvoorbeeld online): dan de publicatiebundel
+    if meta is None:
         return None
-    return _cached_result(str(path), path.stat().st_mtime_ns)
+    return _cached_published(str(meta), meta.stat().st_mtime_ns)
 
 
 def processed_provenance() -> list[dict]:
-    """Provenance manifests of processed versions (metadata only, no rows)."""
+    """Herkomstbestanden van de verwerkte tabellen (alleen metadata, geen rijen): lokaal opgeslagen of in de publicatiebundel."""
     out = []
-    for meta in sorted((ROOT / "data" / "processed").glob("*.provenance.json")):
-        try:
-            out.append(json.loads(meta.read_text(encoding="utf-8")))
-        except (OSError, ValueError):
-            continue
+    for folder in ("processed", "published"):   # de bundel komt laatst, dus processed_for geeft die voorrang
+        for meta in sorted((ROOT / "data" / folder).glob("*.provenance.json")):
+            try:
+                out.append(json.loads(meta.read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                continue
     return out
 
 
