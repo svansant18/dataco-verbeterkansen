@@ -64,7 +64,8 @@ def financial_kpis(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFram
             "revenue": df[REVENUE_COL].sum(), "profit": df[PROFIT_COL].sum(), "gross_sales": df["Sales"].sum(),
             "lines": len(df), "orders": df["Order Id"].nunique(),
         }])
-    out["margin_pct"] = np.where(out["revenue"] > 0, 100 * out["profit"] / out["revenue"].where(out["revenue"] > 0), np.nan)
+    # Omzet <= 0 wordt NaN in de noemer; delen door NaN geeft NaN. Zo krijg je N/B en nooit een verzonnen 0%.
+    out["margin_pct"] = 100 * out["profit"] / out["revenue"].where(out["revenue"] > 0)
     return out
 
 
@@ -91,7 +92,8 @@ def delivery_kpis(ocs: pd.DataFrame, by: list[str] | None = None) -> pd.DataFram
         }])
     out[["orders_all", "eligible_orders", "late_orders"]] = out[["orders_all", "eligible_orders", "late_orders"]].astype(int)
     out["excluded_orders"] = out["orders_all"] - out["eligible_orders"]
-    out["late_pct"] = np.where(out["eligible_orders"] > 0, 100 * out["late_orders"] / out["eligible_orders"].where(out["eligible_orders"] > 0), np.nan)
+    # Zelfde principe: geen in aanmerking komende orders geeft N/B, geen 0%.
+    out["late_pct"] = 100 * out["late_orders"] / out["eligible_orders"].where(out["eligible_orders"] > 0)
     return out
 
 
