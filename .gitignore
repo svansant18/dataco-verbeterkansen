@@ -2,5 +2,11 @@
 data/
 .env
 
+# Lokale uitvoer van de pijplijn (rijentrechter, audit)
+/reports/local/
+
 # Python
 __pycache__/
+.pytest_cache/
+*.parquet
+*.pkl

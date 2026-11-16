@@ -1,7 +1,7 @@
 # Dataverkenning: DataCo supply-chain
 
 Alle cijfers zijn berekend op `data/raw/DataCoSupplyChainDataset.csv` (ongewijzigd). De pijplijn
-(`pipeline_dataco/`) toont dezelfde informatie live in de app.
+(`pipeline.py`) toont dezelfde informatie live in de app, op de pagina Data & Methode.
 
 ## Bronnen (`data/raw/`)
 
