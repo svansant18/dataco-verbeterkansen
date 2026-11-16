@@ -38,6 +38,13 @@ De ruwe CSV (met persoonsgegevens) staat nooit online. De app leest dan de publi
 Lokaal de online situatie nabootsen: zet de omgevingsvariabele `DATACO_BRON=bundel` en start `streamlit run app.py`.
 Een nieuwe bundel maken (nieuwe versie, overschrijft nooit): `python -c "import pipeline; pipeline.build_published('.', 'v2')"`.
 
+## Bronvermelding
+
+Dataset: *DataCo SMART SUPPLY CHAIN FOR BIG DATA ANALYSIS*, Fabian Constante, Fernando Silva en António Pereira, Mendeley Data,
+[doi:10.17632/8gx2fvg2k6](https://doi.org/10.17632/8gx2fvg2k6). Licentie volgens Mendeley: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+(versie 4 en 5; controleer welke versie je bestand is). Bewerkt: dit project gebruikt 13 van de 53 kolommen en laat geannuleerde en
+vermoedelijk frauduleuze orders buiten de omzet en winst.
+
 ## Bouwwijze: pijplijn van inspecteerbare stappen
 
 - `pipeline.py` bevat pure functies, één per stap, zonder Streamlit-imports.

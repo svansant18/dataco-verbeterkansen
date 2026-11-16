@@ -137,3 +137,11 @@ def test_the_app_works_without_the_raw_csv_and_shows_the_same_numbers(monkeypatc
     with_raw = numbers()
     monkeypatch.setenv("DATACO_BRON", "bundel")
     assert numbers() == with_raw
+
+
+def test_the_source_is_credited_on_data_and_methode():
+    """De dataset staat onder een licentie die bronvermelding eist (CC BY 4.0 volgens Mendeley): de naam, de DOI en de bewerking staan in de app."""
+    at = _open()
+    at.switch_page("views/methode.py").run()
+    text = " ".join(str(c.value) for c in at.caption)
+    assert "Constante" in text and "10.17632/8gx2fvg2k6" in text and "CC BY 4.0" in text and "Bewerkt" in text
