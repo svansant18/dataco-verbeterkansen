@@ -41,8 +41,9 @@ Een nieuwe bundel maken (nieuwe versie, overschrijft nooit): `python -c "import 
 ## Bronvermelding
 
 Dataset: *DataCo SMART SUPPLY CHAIN FOR BIG DATA ANALYSIS*, Fabian Constante, Fernando Silva en António Pereira, Mendeley Data,
-[doi:10.17632/8gx2fvg2k6](https://doi.org/10.17632/8gx2fvg2k6). Licentie volgens Mendeley: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-(versie 4 en 5; controleer welke versie je bestand is). Bewerkt: dit project gebruikt 13 van de 53 kolommen en laat geannuleerde en
+[doi:10.17632/8gx2fvg2k6](https://doi.org/10.17632/8gx2fvg2k6), gedownload via [Kaggle (shashwatwork)](https://www.kaggle.com/datasets/shashwatwork/dataco-smart-supply-chain-for-big-data-analysis).
+Licentie volgens Mendeley: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (versie 4 en 5); volgens Kaggle:
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). We vermelden de bron in elk geval. Bewerkt: dit project gebruikt 13 van de 53 kolommen en laat geannuleerde en
 vermoedelijk frauduleuze orders buiten de omzet en winst.
 
 ## Bouwwijze: pijplijn van inspecteerbare stappen

@@ -66,8 +66,9 @@ with pipeline_tab:
     st.markdown(f"**Bron:** `{m['source_file']}` · SHA-256 `{m['source_sha256']}` · ongewijzigd na de run: **{'ja' if m['raw_hash_unchanged_after_run'] else 'NEE'}**")
     st.caption(
         "Dataset: *DataCo SMART SUPPLY CHAIN FOR BIG DATA ANALYSIS* van Fabian Constante, Fernando Silva en António Pereira, "
-        "Mendeley Data, doi:10.17632/8gx2fvg2k6. Licentie volgens Mendeley: CC BY 4.0 "
-        "(https://creativecommons.org/licenses/by/4.0/). Bewerkt: deze app gebruikt 13 van de 53 kolommen en laat geannuleerde en "
+        "Mendeley Data, doi:10.17632/8gx2fvg2k6, gedownload via Kaggle (shashwatwork). Licentie volgens Mendeley: CC BY 4.0 "
+        "(https://creativecommons.org/licenses/by/4.0/); volgens Kaggle: CC0 1.0. We vermelden de bron in elk geval. "
+        "Bewerkt: deze app gebruikt 13 van de 53 kolommen en laat geannuleerde en "
         "vermoedelijk frauduleuze orders buiten de omzet en winst."
     )
     prov = processed_provenance()
