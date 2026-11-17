@@ -238,7 +238,7 @@ def prioritize_selection(
     ctx_fin: pd.DataFrame, ctx_ocs: pd.DataFrame, *, market: str | None = None, category: str | None = None,
     min_orders: int = MIN_ORDERS,
 ) -> tuple[pd.DataFrame, dict[str, float | None], pd.DataFrame, pd.DataFrame]:
-    """DV4 met een filter = inzoomen (logboek 19).
+    """DV4 met een filter = inzoomen (logboek 18).
 
     De referenties en de mediaan komen uit de hele context (alle markten en categorieën, in de gekozen periode).
     De filter op markt of categorie bepaalt alleen welke segmenten getoond worden: ze houden dezelfde klasse als

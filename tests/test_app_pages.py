@@ -79,7 +79,7 @@ def test_dv4_reference_stays_fixed_when_filtering_on_a_category():
 
 
 def test_the_heatmap_stays_when_a_market_is_chosen():
-    """De heatmap rechts op DV1 en DV2 blijft staan, ook met een marktfilter (logboek 22)."""
+    """De heatmap rechts op DV1 en DV2 blijft staan, ook met een marktfilter (logboek 21)."""
     at = _open()
     for market in (None, "Europe"):
         if market:
