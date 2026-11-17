@@ -2,7 +2,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.kpis import RISK_CLASSES, comparison_dimension, delivery_kpis, financial_kpis, nothing_to_compare
+from analysis.kpis import MIN_ORDERS, RISK_CLASSES, comparison_dimension, delivery_kpis, financial_kpis, nothing_to_compare
 from ui.common import (C_PROFIT, C_REVENUE, CENTRAL_QUESTION, NOTHING_TO_COMPARE, filter_banner, fmt_int, fmt_money,
                        fmt_pct, guard, insight_box, kpi_row, style_figure)
 from ui.data import compute_priorities, get_scope
@@ -61,7 +61,18 @@ if not single and not by_dim.empty:
         bullets.append(f"**{best[dim]}** levert de meeste omzet {figures}")
     else:
         bullets.append(f"In {scope.filters.market} levert **{best[dim]}** de meeste omzet {figures}")
-bullets.append(f"{fmt_pct(dlv['late_pct'])} van de in aanmerking komende orders komt te laat; dat is een breed patroon, geen uitschieter in één markt (zie DV2 voor de spreiding).")
+late_text = f"{fmt_pct(dlv['late_pct'])} van de in aanmerking komende orders komt te laat"
+if not single:
+    by_late = delivery_kpis(scope.ocs, [dim])
+    if dim == "Category Name":   # kleine groepen geven extreme percentages, net als op DV2
+        by_late = by_late[by_late["eligible_orders"] >= MIN_ORDERS]
+    if len(by_late) > 1:
+        by_late = by_late.sort_values("late_pct")
+        lo, hi = by_late.iloc[0], by_late.iloc[-1]
+        gap = f"{hi['late_pct'] - lo['late_pct']:.1f}".replace(".", ",")
+        late_text += (f"; per {dim_one} loopt dat van {fmt_pct(lo['late_pct'])} ({lo[dim]}) tot {fmt_pct(hi['late_pct'])} ({hi[dim]}), "
+                      f"een verschil van {gap} procentpunt (zie DV2)")
+bullets.append(late_text + ".")
 n_prio = int((table["priority"] == "Prioriteit").sum())
 bullets.append(f"{n_prio} van {len(enough)} segmenten met voldoende data voldoen aan alle drie de prioriteitscriteria (zie DV4).")
 bullets.append("Alle uitspraken zijn beschrijvend en zijn onderzoeksprioriteiten, geen bewezen oorzaken of besparingen.")

@@ -173,3 +173,24 @@ def test_dv3_shows_the_correlation_and_the_class_margin_as_separate_kpis():
     assert "test_spearman_with_ties_matches_hand_calculation" in corr_block
     disc_block = text.split("`K-DISC`", 1)[1].split("####", 1)[0]
     assert "teller: —" not in disc_block and "(som winst)" in disc_block and "(som omzet)" in disc_block
+
+
+def test_the_dataset_is_not_called_real_in_the_status_line():
+    """We kunnen niet bewijzen dat de dataset "echt" is (de leverstatus hangt niet samen met de orderstatus): de app noemt haar de gepubliceerde DataCo-dataset."""
+    at = _open()
+    text = " ".join(str(c.value) for c in at.caption)
+    assert "gepubliceerde DataCo-dataset" in text and "echte DataCo-data" not in text
+
+
+def test_overview_states_the_spread_of_late_orders_from_the_data():
+    """De Overview toont de spreiding van het % te laat uit de data (per markt, of per categorie bij een marktfilter) en geen vaste conclusie."""
+    at = _open()
+    at.switch_page("views/overview.py").run()
+    assert not at.exception
+    text = " ".join(str(m.value) for m in at.markdown)
+    assert "breed patroon" not in text and "geen uitschieter" not in text
+    assert "per markt loopt dat van" in text and "procentpunt (zie DV2)" in text
+    at.selectbox(key="global_market").select("Europe").run()
+    at.switch_page("views/overview.py").run()
+    text = " ".join(str(m.value) for m in at.markdown)
+    assert "per categorie loopt dat van" in text

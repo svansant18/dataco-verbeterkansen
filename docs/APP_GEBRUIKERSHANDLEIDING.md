@@ -1,6 +1,6 @@
 # Streamlit-app — gebruikershandleiding
 
-**Status:** zes pagina's, gebouwd op de echte DataCo-dataset (`data/raw/DataCoSupplyChainDataset.csv`).
+**Status:** zes pagina's, gebouwd op de gepubliceerde DataCo-dataset (`data/raw/DataCoSupplyChainDataset.csv`).
 
 ## Navigatie en interactie
 
