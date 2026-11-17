@@ -64,6 +64,7 @@ REVENUE_COL = "Order Item Total"   # net of discount: profit ratio in the source
 PROFIT_COL = "Order Profit Per Order"  # line-level profit (verified: varies within an order)
 
 PRIORITY_ORDER = ("Prioriteit", "Optimaliseren", "Monitoren", "Sterk", "Onvoldoende data")
+RISK_CLASSES = PRIORITY_ORDER[:3]  # de klassen waar iets te verbeteren valt; 'Sterk' en 'Onvoldoende data' horen daar niet bij
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,31 @@ class Filters:
             ("Categorie", self.category or "Alle"),
             ("Periode", f"{self.date_from.date() if self.date_from is not None else 'begin'} t/m {self.date_to.date() if self.date_to is not None else 'einde'}"),
         )
+
+
+def comparison_dimension(f: Filters) -> tuple[str, str, str]:
+    """Waarover vergelijken de grafieken? Bij één gekozen markt per categorie, anders per markt.
+
+    Met één markt zou "per markt" maar één staaf tonen. Geeft (kolom, enkelvoud, meervoud).
+    """
+    return ("Category Name", "categorie", "categorieën") if f.market else ("Market", "markt", "markten")
+
+
+def available_options(fin: pd.DataFrame, f: Filters) -> tuple[list[str], list[str]]:
+    """Welke markten en categorieën kan je nog kiezen, gegeven de andere keuzes en de periode?
+
+    Kies je een markt, dan bieden de categorieën alleen nog wat in die markt voorkomt, en andersom. Het periodefilter telt mee.
+    Zo kan je geen combinatie kiezen die leeg is. Geeft (markten, categorieën).
+    """
+    in_period = apply_filters(fin, Filters(date_from=f.date_from, date_to=f.date_to))
+    markets = sorted(apply_filters(in_period, Filters(category=f.category))["Market"].unique())
+    categories = sorted(apply_filters(in_period, Filters(market=f.market))["Category Name"].unique())
+    return markets, categories
+
+
+def nothing_to_compare(f: Filters) -> bool:
+    """Eén markt én één categorie gekozen: er is nog maar één segment, dus niets om te vergelijken."""
+    return bool(f.market and f.category)
 
 
 def apply_filters(df: pd.DataFrame, f: Filters, *, date_col: str = "order_date") -> pd.DataFrame:
@@ -172,9 +198,10 @@ def deterministic_sample(df: pd.DataFrame, n: int = 5000, seed: int = 42) -> pd.
 def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: int = MIN_ORDERS) -> tuple[pd.DataFrame, dict[str, float | None]]:
     """DV4: transparent rules on DV1 + DV2 outputs only (D-010, spec proposal approved).
 
-    Reference margin / late % = weighted totals of the same filtered scope. A segment needs
-    >= min_orders eligible orders AND a known margin. 'Hoog volume' = revenue >= median of the
-    segments that qualify.
+    De referentie voor marge en % vertraagd = het gewogen totaal van de aangeleverde data (zie prioritize_selection).
+    Een segment telt mee bij minstens `min_orders` leverbare orders en een bekende marge.
+    "Hoog volume" = omzet >= de mediaan van de segmenten die meetellen.
+    Prioriteit = hoog volume EN marge onder de referentie EN vertraging boven de referentie.
     """
     keys = ["Market", "Category Name"]
     table = fin_kpi.merge(del_kpi[keys + ["eligible_orders", "late_orders", "late_pct"]], on=keys, how="inner")
@@ -205,3 +232,28 @@ def priority_table(fin_kpi: pd.DataFrame, del_kpi: pd.DataFrame, *, min_orders: 
     table = table.sort_values(["priority_rank", "revenue", "Market", "Category Name"], ascending=[True, False, True, True]).reset_index(drop=True)
     refs = {"ref_margin_pct": ref_margin, "ref_late_pct": ref_late, "median_revenue_qualifying": None if np.isnan(median_rev) else float(median_rev), "min_orders": min_orders}
     return table, refs
+
+
+def prioritize_selection(
+    ctx_fin: pd.DataFrame, ctx_ocs: pd.DataFrame, *, market: str | None = None, category: str | None = None,
+    min_orders: int = MIN_ORDERS,
+) -> tuple[pd.DataFrame, dict[str, float | None], pd.DataFrame, pd.DataFrame]:
+    """DV4 met een filter = inzoomen (logboek 19).
+
+    De referenties en de mediaan komen uit de hele context (alle markten en categorieën, in de gekozen periode).
+    De filter op markt of categorie bepaalt alleen welke segmenten getoond worden: ze houden dezelfde klasse als
+    zonder filter. Zou je de filter vóór de berekening toepassen, dan vergelijkt een segment zich met het gemiddelde
+    van zijn eigen categorie, en die bestaat soms uit maar 2 segmenten.
+
+    Geeft (tabel met de getoonde segmenten, referenties, fin_kpi en del_kpi van de hele context).
+    """
+    keys = ["Market", "Category Name"]
+    fin_kpi = financial_kpis(ctx_fin, keys)
+    del_kpi = delivery_kpis(ctx_ocs, keys)
+    table, refs = priority_table(fin_kpi, del_kpi, min_orders=min_orders)
+    shown = pd.Series(True, index=table.index)
+    if market:
+        shown &= table["Market"].eq(market)
+    if category:
+        shown &= table["Category Name"].eq(category)
+    return table[shown].reset_index(drop=True), refs, fin_kpi, del_kpi

@@ -17,9 +17,10 @@ Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-ex
 2. `requirements.txt` bevat enkel wat de app importeert, met versienummers (streamlit, pandas, numpy, plotly);
    test-tools staan apart in `requirements-dev.txt`.
 3. Een nieuw package? Vraag het EERST aan Steve, met reden en alternatief. Installeer niets zonder OK.
-4. Data in `data/`, geheimen in `.env`. `data/`, `.env` en `__pycache__/` staan in `.gitignore`.
+4. Data in `data/`, geheimen in `.env`. `data/` (behalve `data/published/`), `.env` en `__pycache__/` staan in `.gitignore`.
    `data/raw/` bevat de ruwe downloads en is **read-only voor Claude**: nooit aanpassen of
-   overschrijven (`deny`-regel in `.claude/settings.json`). Afgeleide data komt in `data/processed/`.
+   overschrijven (`deny`-regel in `.claude/settings.json`). Afgeleide data komt in `data/processed/`. Alleen `data/published/`
+   (de publicatiebundel, zonder persoonsgegevens) staat wel in git en mag online; de ruwe CSV nooit.
 5. Standaardomgeving is de conda-environment `syntra-ds` (geen eigen `.venv`). Python:
    `C:\Users\steve\anaconda3\envs\syntra-ds\python.exe`.
 6. Git-repo, branch `main`. Werk aan grote wijzigingen op een aparte branch (de ombouw naar één app gebeurde op

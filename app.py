@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ui.data import ALL_CATEGORIES, ALL_MARKETS, filter_options, get_result
+from ui.data import ALL_CATEGORIES, ALL_MARKETS, data_source, dependent_options, filter_options, get_result
 
 st.set_page_config(page_title="DataCo · Supply Chain Insights", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
 
@@ -53,13 +53,16 @@ if result is None:
     col3.caption("Periode: beschikbaar zodra een bron aanwezig is")
     col4.caption("**Datasetstatus:** geen bron — geen cijfers")
 else:
-    markets, categories, d_min, d_max = filter_options(result)
+    _, _, d_min, d_max = filter_options(result)
     st.session_state.setdefault("global_period", (d_min, d_max))
+    # Afhankelijke filters: Markt en Categorie bieden alleen wat nog bestaat, gegeven de andere keuze en de periode.
+    markets, categories = dependent_options(result)
     col1.selectbox("Markt", [ALL_MARKETS, *markets], key="global_market")
     col2.selectbox("Productcategorie", [ALL_CATEGORIES, *categories], key="global_category")
     col3.date_input("Orderdatum (periode)", min_value=d_min, max_value=d_max, key="global_period", format="DD/MM/YYYY")
     with col4:
-        st.caption("**Datasetstatus:** echte DataCo-data · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
+        bron = "ruwe CSV" if data_source() == "ruwe CSV" else "publicatiebundel, zonder persoonsgegevens"
+        st.caption(f"**Datasetstatus:** echte DataCo-data ({bron}) · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
         st.button("Reset filters", on_click=reset_filters, width="stretch")
 
 # Six logical subpages inside one application, never six Streamlit processes.

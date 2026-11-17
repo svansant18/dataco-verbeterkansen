@@ -2,9 +2,9 @@
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis.kpis import delivery_kpis, financial_kpis
-from ui.common import (C_PROFIT, C_REVENUE, CENTRAL_QUESTION, filter_banner, fmt_int, fmt_money, fmt_pct, guard,
-                       insight_box, kpi_row, style_figure)
+from analysis.kpis import RISK_CLASSES, comparison_dimension, delivery_kpis, financial_kpis, nothing_to_compare
+from ui.common import (C_PROFIT, C_REVENUE, CENTRAL_QUESTION, NOTHING_TO_COMPARE, filter_banner, fmt_int, fmt_money,
+                       fmt_pct, guard, insight_box, kpi_row, style_figure)
 from ui.data import compute_priorities, get_scope
 
 st.title("Executive Overview")
@@ -15,7 +15,9 @@ filter_banner(scope, f"{fmt_int(len(scope.fin))} orderregels · {fmt_int(scope.f
 
 fin = financial_kpis(scope.fin).iloc[0]
 dlv = delivery_kpis(scope.ocs).iloc[0]
-by_market = financial_kpis(scope.fin, ["Market"]).sort_values("revenue", ascending=True)
+dim, dim_one, _ = comparison_dimension(scope.filters)   # per markt, of per categorie als je één markt kiest
+single = nothing_to_compare(scope.filters)                # één markt én één categorie: niets te vergelijken
+by_dim = financial_kpis(scope.fin, [dim]).sort_values("revenue", ascending=True)
 table, refs, fin_kpi, del_kpi = compute_priorities(scope)
 
 kpi_row([
@@ -28,19 +30,23 @@ kpi_row([
 left, right = st.columns([1.15, 1.0])
 with left:
     with st.container(border=True):
-        st.subheader("Omzet en winst per markt")
-        fig = go.Figure()
-        fig.add_bar(name="Omzet", y=by_market["Market"], x=by_market["revenue"], orientation="h", marker_color=C_REVENUE)
-        fig.add_bar(name="Winst", y=by_market["Market"], x=by_market["profit"], orientation="h", marker_color=C_PROFIT)
-        fig.update_layout(barmode="group", xaxis_title="Bedrag (bronvaluta)")
-        st.plotly_chart(style_figure(fig, height=340), width="stretch")
+        shown = by_dim.tail(10)   # van klein naar groot gesorteerd: de grootste staan onderaan en dus bovenaan de grafiek
+        st.subheader(f"Omzet en winst per {dim_one}" + (" (top 10 op omzet)" if len(shown) < len(by_dim) else ""))
+        if single:
+            st.info(NOTHING_TO_COMPARE)
+        else:
+            fig = go.Figure()
+            fig.add_bar(name="Omzet", y=shown[dim], x=shown["revenue"], orientation="h", marker_color=C_REVENUE)
+            fig.add_bar(name="Winst", y=shown[dim], x=shown["profit"], orientation="h", marker_color=C_PROFIT)
+            fig.update_layout(barmode="group", xaxis_title="Bedrag (bronvaluta)")
+            st.plotly_chart(style_figure(fig, height=340), width="stretch")
 with right:
     with st.container(border=True):
         st.subheader("Top verbeterprioriteiten")
         enough = table[table["enough_data"]]
-        top = enough.head(3)
+        top = enough[enough["priority"].isin(RISK_CLASSES)].head(3)
         if top.empty:
-            st.info("Geen segment met voldoende data in deze selectie.")
+            st.info("Geen segment met een risico in deze selectie.")
         for i, (_, r) in enumerate(top.iterrows(), start=1):
             st.markdown(f"**{i}. {r['Market']} · {r['Category Name']}** — _{r['priority']}_  \n"
                         f"Omzet {fmt_money(r['revenue'])} · marge {fmt_pct(r['margin_pct'])} · {fmt_pct(r['late_pct'])} vertraagd ({fmt_int(r['eligible_orders'])} orders)  \n"
@@ -48,9 +54,13 @@ with right:
         st.page_link("views/dv4.py", label="Bekijk DV4 →", icon="🎯")
 
 bullets = []
-if not by_market.empty:
-    best = by_market.iloc[-1]
-    bullets.append(f"**{best['Market']}** levert de meeste omzet ({fmt_money(best['revenue'])}); totaalmarge {fmt_pct(fin['margin_pct'])}.")
+if not single and not by_dim.empty:
+    best = by_dim.iloc[-1]
+    figures = f"({fmt_money(best['revenue'])}); totaalmarge {fmt_pct(fin['margin_pct'])}."
+    if dim == "Market":
+        bullets.append(f"**{best[dim]}** levert de meeste omzet {figures}")
+    else:
+        bullets.append(f"In {scope.filters.market} levert **{best[dim]}** de meeste omzet {figures}")
 bullets.append(f"{fmt_pct(dlv['late_pct'])} van de in aanmerking komende orders komt te laat; dat is een breed patroon, geen uitschieter in één markt (zie DV2 voor de spreiding).")
 n_prio = int((table["priority"] == "Prioriteit").sum())
 bullets.append(f"{n_prio} van {len(enough)} segmenten met voldoende data voldoen aan alle drie de prioriteitscriteria (zie DV4).")

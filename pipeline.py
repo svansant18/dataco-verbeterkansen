@@ -102,16 +102,19 @@ def persist_processed_dataset(
     decision_ids: list[str],
     project_root: Path = Path("."),
     encoding: str = "utf-8-sig",
+    folder: str = "processed",
 ) -> tuple[Path, Path]:
-    """Persist a NEW derived CSV and its manifest under data/processed/ only.
+    """Persist a NEW derived CSV and its manifest under data/<folder>/ only (processed, or published for the publication bundle).
 
     The original data/raw CSV is opened exclusively for hashing, never for writing.
     Caller supplies approved transformations and their logged decision identifiers.
     This does not execute or approve any business transformation itself.
     """
+    if folder not in ("processed", "published"):
+        raise ValueError("folder must be 'processed' or 'published'")
     root = Path(project_root).resolve()
     raw_dir = (root / "data" / "raw").resolve()
-    processed_dir = (root / "data" / "processed").resolve()
+    processed_dir = (root / "data" / folder).resolve()
     source = Path(source_path)
     source = (root / source).resolve() if not source.is_absolute() else source.resolve()
     if not source.is_relative_to(raw_dir) or not source.is_file() or source.suffix.lower() != ".csv":
@@ -140,7 +143,7 @@ def persist_processed_dataset(
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".csv.tmp", dir=processed_dir, delete=False, newline="") as output:
             temporary_csv = Path(output.name)
-            df.to_csv(output, index=False)
+            df.to_csv(output, index=False, lineterminator="\n")   # vaste regeleinden: de hash blijft gelijk na git en op elk systeem
         output_hash = file_sha256(temporary_csv)
         raw_hash_after = file_sha256(source)
         if raw_hash_before != raw_hash_after:
@@ -155,7 +158,7 @@ def persist_processed_dataset(
             "transformation_steps": transformation_steps,
             "decision_ids": decision_ids,
             "created_at_utc": datetime.now(timezone.utc).isoformat(),
-            "status": "STORED_LOCALLY_NOT_PUBLICATION_APPROVED",
+            "status": "STORED_LOCALLY_NOT_PUBLICATION_APPROVED" if folder == "processed" else "PUBLICATION_BUNDLE",
         }
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".json.tmp", dir=processed_dir, delete=False) as output:
             temporary_meta = Path(output.name)
@@ -493,6 +496,86 @@ def build_processed(project_root: Path = Path("."), version: str = "v1") -> list
     meta = json.loads(out[0][1].read_text(encoding="utf-8"))
     write_row_funnel(result, meta["processed_sha256"], root)
     return out
+
+
+# ---------------------------------------------------------------------------
+# De publicatiebundel: wat er online mag staan. De ruwe CSV (met persoonsgegevens) nooit.
+# ---------------------------------------------------------------------------
+PUBLISHED_TABLES = ("financial_lines", "order_category_shipping")
+
+
+def build_published(project_root: Path = Path("."), version: str = "v1") -> list[Path]:
+    """Maak de publicatiebundel in data/published/: de twee analysetabellen, hun herkomst en één metabestand.
+
+    De tabellen bevatten alleen de kolommen uit ANALYSIS_COLUMNS en wat daaruit is afgeleid: nooit namen, adressen, e-mails of wachtwoorden.
+    Het metabestand bewaart wat je niet uit de tabellen kan herberekenen (rijentrechter, audit, hash van de bron), zodat de app ook zonder
+    de ruwe CSV de pagina Data & Methode kan tonen. Een bestaande versie wordt nooit overschreven.
+    """
+    root = Path(project_root).resolve()
+    source = root / "data" / "raw" / RAW_FILENAME
+    if not source.is_file():
+        raise ValueError(f"Expected {RAW_FILENAME} under data/raw/, not found")
+    result = run_pipeline(source)
+    steps = [s.name for s in result.stage_audit] + ["Order x categorie-grain (unieke orders)"]
+    frames = {"financial_lines": result.financial_rows, "order_category_shipping": result.order_category_shipping}
+    written: list[Path] = []
+    tables: dict[str, dict] = {}
+    for name in PUBLISHED_TABLES:
+        csv_path, provenance_path = persist_processed_dataset(
+            frames[name], source_path=source, output_name=f"dataco_{name}_{version}.csv", transformation_steps=steps,
+            decision_ids=DECISION_IDS, project_root=root, encoding=SOURCE_ENCODING, folder="published",
+        )
+        tables[name] = {"file": csv_path.name, "sha256": json.loads(provenance_path.read_text(encoding="utf-8"))["processed_sha256"],
+                        "rows": int(len(frames[name])), "columns": list(frames[name].columns)}
+        written += [csv_path, provenance_path]
+    meta = {
+        "version": version,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "tables": tables,
+        "stage_audit": [{"name": s.name, "rows_in": s.rows_in, "rows_out": s.rows_out,
+                         "primary_exclusion_reasons": dict(s.primary_exclusion_reasons)} for s in result.stage_audit],
+        "grain_audit": result.grain_audit,
+        "quality_report": result.quality_report,
+        "source_manifest": result.source_manifest,
+        "privacy": "Alleen analysekolommen (zie ANALYSIS_COLUMNS in pipeline.py); geen namen, adressen, e-mails of wachtwoorden.",
+    }
+    meta_path = root / "data" / "published" / f"dataco_meta_{version}.json"
+    if meta_path.exists():
+        raise FileExistsError("Published meta exists; use a new version")
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False, default=str) + "\n", encoding="utf-8", newline="\n")
+    return written + [meta_path]
+
+
+def published_meta_path(project_root: Path = Path(".")) -> Path | None:
+    """Het nieuwste metabestand van de publicatiebundel, of None als er geen bundel is."""
+    found = sorted((Path(project_root).resolve() / "data" / "published").glob("dataco_meta_v*.json"))
+    return found[-1] if found else None
+
+
+def load_published(project_root: Path = Path(".")) -> PipelineResult | None:
+    """Lees de publicatiebundel terug als een PipelineResult, voor de app zonder ruwe CSV.
+
+    Elke tabel wordt eerst gecontroleerd op haar SHA-256; is het bestand gewijzigd of beschadigd, dan stopt het met een fout.
+    """
+    meta_path = published_meta_path(project_root)
+    if meta_path is None:
+        return None
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    frames = {}
+    for name, info in meta["tables"].items():
+        path = meta_path.parent / info["file"]
+        if file_sha256(path) != info["sha256"]:
+            raise ValueError(f"De SHA-256 van {path.name} komt niet overeen met het metabestand: het bestand is gewijzigd of beschadigd")
+        frame = pd.read_csv(path, parse_dates=["order_date"], low_memory=False)
+        for column in ("Delivery Status", "Category Name", "Market", "Order Status", "delivery_status"):
+            if column in frame:
+                frame[column] = frame[column].astype("string")   # hetzelfde teksttype als de pijplijn zelf (anders toont de app "str")
+        frames[name] = frame
+    stages = tuple(StageCounts(s["name"], s["rows_in"], s["rows_out"], s["primary_exclusion_reasons"]) for s in meta["stage_audit"])
+    return PipelineResult(
+        financial_rows=frames["financial_lines"], order_category_shipping=frames["order_category_shipping"], stage_audit=stages,
+        grain_audit=meta["grain_audit"], quality_report=meta["quality_report"], source_manifest=meta["source_manifest"],
+    )
 
 
 if __name__ == "__main__":

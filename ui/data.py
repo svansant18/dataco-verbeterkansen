@@ -5,6 +5,7 @@ No business logic lives here: filtering and KPIs come from analysis.kpis, the da
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -12,8 +13,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from analysis.kpis import Filters, apply_filters, delivery_kpis, financial_kpis, priority_table
-from pipeline import RAW_FILENAME, PipelineResult, run_pipeline
+from analysis.kpis import Filters, apply_filters, available_options, prioritize_selection
+from pipeline import RAW_FILENAME, PipelineResult, load_published, published_meta_path, run_pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
 ALL_MARKETS = "Alle markten"
@@ -21,32 +22,55 @@ ALL_CATEGORIES = "Alle categorieën"
 
 
 def raw_csv_path() -> Path | None:
-    """data/raw bevat meerdere CSV's (o.a. de omschrijving en de access logs): we gebruiken enkel de hoofdset."""
+    """data/raw bevat meerdere CSV's (o.a. de omschrijving en de access logs): we gebruiken enkel de hoofdset.
+
+    Zet je de omgevingsvariabele DATACO_BRON op "bundel", dan negeert de app de ruwe CSV (om de online versie lokaal na te bootsen).
+    """
+    if os.environ.get("DATACO_BRON") == "bundel":
+        return None
     path = ROOT / "data" / "raw" / RAW_FILENAME
     return path if path.is_file() else None
 
 
 @st.cache_resource(show_spinner="Pipeline draait op de brondata (read-only)…")
 def _cached_result(path_str: str, modified_ns: int) -> PipelineResult:
-    _ = modified_ns  # a changed file invalidates the cache
+    # modified_ns wordt hier niet gebruikt, maar hoort bij de cache-sleutel: verandert het bestand, dan draait de pijplijn opnieuw.
+    _ = modified_ns
     return run_pipeline(Path(path_str))
+
+
+@st.cache_resource(show_spinner="Publicatiebundel wordt ingelezen…")
+def _cached_published(meta_str: str, modified_ns: int) -> PipelineResult | None:
+    _ = (meta_str, modified_ns)  # cache-sleutel, zoals hierboven
+    return load_published(ROOT)
+
+
+def data_source() -> str:
+    """Waar komen de cijfers vandaan: de ruwe CSV (lokaal), de publicatiebundel (online) of nergens."""
+    if raw_csv_path() is not None:
+        return "ruwe CSV"
+    return "publicatiebundel" if published_meta_path(ROOT) is not None else "geen"
 
 
 def get_result() -> PipelineResult | None:
     path = raw_csv_path()
-    if path is None:
+    if path is not None:
+        return _cached_result(str(path), path.stat().st_mtime_ns)
+    meta = published_meta_path(ROOT)   # geen ruwe CSV (bijvoorbeeld online): dan de publicatiebundel
+    if meta is None:
         return None
-    return _cached_result(str(path), path.stat().st_mtime_ns)
+    return _cached_published(str(meta), meta.stat().st_mtime_ns)
 
 
 def processed_provenance() -> list[dict]:
-    """Provenance manifests of processed versions (metadata only, no rows)."""
+    """Herkomstbestanden van de verwerkte tabellen (alleen metadata, geen rijen): lokaal opgeslagen of in de publicatiebundel."""
     out = []
-    for meta in sorted((ROOT / "data" / "processed").glob("*.provenance.json")):
-        try:
-            out.append(json.loads(meta.read_text(encoding="utf-8")))
-        except (OSError, ValueError):
-            continue
+    for folder in ("processed", "published"):   # de bundel komt laatst, dus processed_for geeft die voorrang
+        for meta in sorted((ROOT / "data" / folder).glob("*.provenance.json")):
+            try:
+                out.append(json.loads(meta.read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                continue
     return out
 
 
@@ -76,8 +100,10 @@ def current_filters() -> Filters:
 class Scope:
     result: PipelineResult
     filters: Filters
-    fin: pd.DataFrame   # order lines, in scope, after filters
-    ocs: pd.DataFrame   # order x market x category, after filters
+    fin: pd.DataFrame      # orderregels in de analysebasis, na alle filters
+    ocs: pd.DataFrame      # order x markt x categorie, na alle filters
+    ctx_fin: pd.DataFrame  # idem, maar enkel gefilterd op periode (voor de vaste referentie van DV4)
+    ctx_ocs: pd.DataFrame
 
     @property
     def empty(self) -> bool:
@@ -89,20 +115,37 @@ def get_scope() -> Scope | None:
     if result is None:
         return None
     f = current_filters()
+    period = Filters(date_from=f.date_from, date_to=f.date_to)
+    ctx_fin = apply_filters(result.financial_rows, period)
+    ctx_ocs = apply_filters(result.order_category_shipping, period)
+    selection = Filters(market=f.market, category=f.category)
     return Scope(
         result=result, filters=f,
-        fin=apply_filters(result.financial_rows, f),
-        ocs=apply_filters(result.order_category_shipping, f),
+        fin=apply_filters(ctx_fin, selection), ocs=apply_filters(ctx_ocs, selection),
+        ctx_fin=ctx_fin, ctx_ocs=ctx_ocs,
     )
 
 
 def compute_priorities(scope: Scope):
-    """DV4 reuses the DV1 and DV2 aggregates of the SAME filtered scope (no parallel formulas)."""
-    keys = ["Market", "Category Name"]
-    fin_kpi = financial_kpis(scope.fin, keys)
-    del_kpi = delivery_kpis(scope.ocs, keys)
-    table, refs = priority_table(fin_kpi, del_kpi)
-    return table, refs, fin_kpi, del_kpi
+    """DV4 en Overview: klassen met een vaste referentie; markt en categorie zoomen alleen in (zie prioritize_selection)."""
+    return prioritize_selection(scope.ctx_fin, scope.ctx_ocs, market=scope.filters.market, category=scope.filters.category)
+
+
+def dependent_options(result: PipelineResult) -> tuple[list[str], list[str]]:
+    """De opties voor Markt en Categorie: ze hangen van elkaar en van de periode af (zie available_options).
+
+    Is een gekozen waarde niet meer mogelijk (bijvoorbeeld na een andere periode), dan springt dat filter terug op 'Alle'.
+    """
+    for _ in range(3):   # na een reset kunnen de opties van het andere filter veranderen
+        f = current_filters()
+        markets, categories = available_options(result.financial_rows, f)
+        if f.market and f.market not in markets:
+            st.session_state["global_market"] = ALL_MARKETS
+        elif f.category and f.category not in categories:
+            st.session_state["global_category"] = ALL_CATEGORIES
+        else:
+            break
+    return available_options(result.financial_rows, current_filters())
 
 
 def filter_options(result: PipelineResult) -> tuple[list[str], list[str], date, date]:

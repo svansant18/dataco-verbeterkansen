@@ -1,5 +1,6 @@
-# Data en geheimen (zie CLAUDE.md, afspraak 4)
-data/
+# Data en geheimen (zie CLAUDE.md, afspraak 4). Alleen de publicatiebundel (data/published/) staat wel in git.
+data/*
+!data/published/
 .env
 
 # Lokale uitvoer van de pijplijn (rijentrechter, audit)

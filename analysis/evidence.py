@@ -99,7 +99,7 @@ KPI_REGISTER: dict[str, dict] = {
         missing_rule="geen ontbrekende waarden in de analysebasis (pipeline-stap Validatie)",
         pipeline_stages=("Validatie", "Opschonen", "Analysebasis (omzet/winst)"), decision_id="D-007",
         test_ids=(_T + "test_stage_conservation", _T + "test_filter_consistency"),
-        caveat="Omzet = Order Item Total (na korting), omdat het winstveld daarop is gebaseerd (A-1, nog te bevestigen). Bruto Sales staat in de detailtabel.",
+        caveat="Omzet = Order Item Total (na korting), omdat het winstveld daarop is gebaseerd (A-1, bevestigd in logboek 3). Bruto Sales staat in de detailtabel.",
     ),
     "K-PROFIT": dict(
         question_id="DV1", label="Winst", unit="zelfde valuta", source_columns=("Order Profit Per Order",), grain="orderregel",
@@ -146,7 +146,7 @@ KPI_REGISTER: dict[str, dict] = {
         numerator="som winst", denominator="som omzet", aggregation="gewogen per klasse",
         missing_rule="omzet <= 0 valt uit de correlatie", pipeline_stages=("Analysebasis (omzet/winst)",), decision_id="D-009",
         test_ids=(_T + "test_discount_class_boundaries",),
-        caveat="Kortingsklassen zijn een VOORSTEL (D-009 nog niet goedgekeurd). Korting is een fractie 0-0,25. Samenhang is geen oorzakelijk bewijs.",
+        caveat="Kortingsklassen: D-009, goedgekeurd (logboek 9). Korting is een fractie 0-0,25. Samenhang is geen oorzakelijk bewijs.",
     ),
     "K-PRIO": dict(
         question_id="DV4", label="Verbeterprioriteit", unit="klasse", source_columns=("K-REV", "K-MARGIN", "K-LATEPCT"), grain="markt x categorie",
@@ -154,7 +154,7 @@ KPI_REGISTER: dict[str, dict] = {
         numerator="-", denominator="-", aggregation="beslisregels, geen score",
         missing_rule="< 30 orders of onbekende marge = 'Onvoldoende data' (nooit 'laag risico')", pipeline_stages=("DV1", "DV2"), decision_id="D-010",
         test_ids=(_T + "test_priority_min_orders_and_tiebreak",),
-        caveat="Hypothese/onderzoeksprioriteit, geen bewezen oorzaak of eurobesparing. Referenties = gewogen totalen van de actieve selectie.",
+        caveat="Hypothese/onderzoeksprioriteit, geen bewezen oorzaak of eurobesparing. Referenties = gewogen totalen van alle markten en categorieën in de gekozen periode; een filter op markt of categorie zoomt alleen in.",
     ),
 }
 
