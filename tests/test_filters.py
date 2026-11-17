@@ -1,4 +1,4 @@
-"""Filters en DV4: een filter op markt of categorie zoomt in; de klassen en referenties veranderen niet (logboek 19)."""
+"""Filters en DV4: een filter op markt of categorie zoomt in; de klassen en referenties veranderen niet (logboek 18)."""
 from pathlib import Path
 
 import pandas as pd
