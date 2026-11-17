@@ -25,7 +25,7 @@ Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-ex
    `C:\Users\steve\anaconda3\envs\syntra-ds\python.exe`.
 6. Git-repo, branch `main`. Werk aan grote wijzigingen op een aparte branch (de ombouw naar één app gebeurde op
    `v3-functioneel`) en merge pas na akkoord. Commit elke werkende stap met een duidelijke boodschap, en nooit
-   zonder dat Tim de wijziging zag.
+   zonder dat Steve de wijziging zag.
 7. Houd `README.md` kort en deze `CLAUDE.md` in sync met de afspraken.
 8. **Geen zijbalk** (`st.sidebar`): alle bediening, filters en uitleg staan in de app zelf (hoofdpagina,
    tabs, expanders, kolommen). Algemene regel van de docent voor al de apps.

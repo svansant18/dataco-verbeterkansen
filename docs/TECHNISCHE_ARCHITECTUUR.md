@@ -8,10 +8,14 @@ read-only data/raw/  --(read + SHA-256)--> pipeline.py (pure functies)
                                         |-- kwaliteitscontrole/cleaning
                                         '-- metadata van input/output en dropredenen
                                                  |
-                                         data/processed/<nieuwe-versie>
+                                         data/processed/<nieuwe-versie>        (lokaal, niet in git)
                                          + provenance JSON + hashes
+                                         data/published/<versie>               (publicatiebundel, wel in git,
+                                         enkel de 13 analysekolommen)           de app valt hierop terug zonder ruwe CSV)
                                                  |
                                 analysis/kpis.py + analysis/evidence.py
+                                                 |
+                                ui/data.py (data ophalen met cache) + ui/common.py (weergave)
                                                  |
                       app.py + views/{overview,dv1,dv2,dv3,dv4,methode}.py
                                                  |
@@ -26,12 +30,13 @@ read-only data/raw/  --(read + SHA-256)--> pipeline.py (pure functies)
 - `analysis/kpis.py`: pure KPI-berekeningen met correcte aggregatie, edge cases en hergebruik voor grafieken.
 - `analysis/evidence.py`: bewijscontract van bron naar formule en visualisatie.
 - `ui/common.py`: gedeelde evidence- en weergavecomponenten. Werkelijke evidence uit `analysis` opbouwen na audit.
+- `ui/data.py`: data-toegang met cache (`st.cache_resource`, sleutel = bestand + tijdstempel): de ruwe CSV lokaal, de publicatiebundel online; de globale filters en de afhankelijke filteropties.
 
 ## Immutable data en privacy
 
 - `data/raw/`: alleen lezen. SHA-256 controleren vóór/na pipeline. Origineel nooit aanpassen, verplaatsen, verwijderen of overschrijven.
 - `data/processed/`: **uitsluitend nieuwe** datasets met provenance; houd versie en verwerking bij. Overschrijf niet zonder expliciete toestemming.
-- `.gitignore` sluit `data/raw`, `data/processed`, `data/public`, `data/private` en secrets uit. Vereenvoudigd demo-data mag alleen na privacy- en licentiecontrole publiek gedeeld worden.
+- `.gitignore` sluit `data/*` uit, **behalve `data/published/`** (de publicatiebundel zonder persoonsgegevens), en daarnaast `.env` en `reports/local/`. De ruwe CSV en `data/processed/` gaan dus nooit naar git.
 - Auditrapporten en Markdown bevatten alleen veilige tellingen, geaggregeerde resultaten en technische metadata — geen names/addresses/emails/transcripties.
 
 ## Diagrammen, filters en bewijs
@@ -46,9 +51,12 @@ Elk KPI-resultaat toont bronvelden, kolom-grain, teller/noemer, nullbeleid, filt
 4. Update `beslissingslogboek.md` en andere getroffen `.md`.
 5. Commit elke werkende stap op een branch, pas nadat de wijziging is bekeken. Geen push, merge of deploy zonder toestemming.
 
-## Nog te valideren
+## Gevalideerd en nog open
 
-- Echte dataset, bestandsschema, encodings en kolombetekenis.
-- Performantie op de volledige bron, data caching in Streamlit en veilige publicatieset.
-- Deploymentinstellingen, live URL, access control en data-licentie.
+Gevalideerd:
+- Dataset, bestandsschema, encoding (latin-1) en kolombetekenis: zie `data-exploration.md` en logboekrij 13.
+- Caching in Streamlit (`st.cache_resource`) en een veilige publicatieset (`data/published/`, 13 analysekolommen, SHA-256-controle).
+- Deployment: Streamlit Community Cloud, publiek, https://dataco-verbeterkansen.streamlit.app (logboekrij 19). Licentie en bronvermelding: logboekrij 13.
+
+Nog open:
 - Eigen aanvullende tests van de student (optioneel).

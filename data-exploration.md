@@ -60,7 +60,7 @@ Alle andere kolommen zijn volledig ingevuld. `Product Status` is overal 0 en bev
 | `Category Id` = `Product Category Id` (100%) | Dubbele kolom. |
 | `Product Price` = `Order Item Product Price` (100%) | Dubbele kolom. |
 | `Sales` = `Order Item Product Price` x `Order Item Quantity` (100%) | `Sales` is bruto, vóór korting. |
-| `Order Item Total` = `Sales` - `Order Item Discount` (99,3%) | Bijna altijd; 0,7% wijkt af. |
+| `Order Item Total` = `Sales` - `Order Item Discount` (100%, binnen de afronding van 0,01) | Altijd, op afronding na. |
 | `Order Item Discount` = `Sales` x `Order Item Discount Rate` (94,4%) | Een deel wijkt af (afrondingen of andere basis), nog uit te zoeken. |
 | `Order Item Profit Ratio` = `Order Profit Per Order` / `Order Item Total` (100%) | Dit is de marge, op omzet na korting. |
 | `Order Profit Per Order` is negatief bij 33 784 rijen | Een groot deel van de lijnen is verlieslatend. |
@@ -69,18 +69,22 @@ Alle andere kolommen zijn volledig ingevuld. `Product Status` is overal 0 en bev
 
 ## Privacy
 
-`Customer Email` en `Customer Password` zijn gemaskeerd (`XXXXXXXXX`). `Customer Fname`, `Customer Lname` en `Customer Street` zijn persoonsgegevens. Ze zijn niet nodig voor de deelvragen en de pijplijn verwijdert ze (stap 3).
+`Customer Email` en `Customer Password` zijn gemaskeerd (`XXXXXXXXX`). `Customer Fname`, `Customer Lname` en `Customer Street` zijn persoonsgegevens. Ze zijn niet nodig voor de deelvragen en worden **niet ingelezen**: de pijplijn leest enkel de 13 analysekolommen (stap 1), dus ze komen nergens in de app, de exports of git.
 
-## Welke kolommen horen bij welke deelvraag? (voorstel, nog te bevestigen)
+## Welke kolommen gebruikt de app per deelvraag?
+
+De app leest 13 van de 53 kolommen. Dit gebruikt elke deelvraag:
 
 | Deelvraag | Kolommen |
 |---|---|
-| **DV1 Omzet & winst** | `Market`, `Order Region`, `Category Name`, `Order Id`, `Order Item Id`, `order date (DateOrders)`, `Sales`, `Order Item Total`, `Order Profit Per Order`, `Order Item Quantity`, `Order Status` |
-| **DV2 Leverbetrouwbaarheid** | `Order Id`, `Market`, `Category Name`, `Delivery Status`, `Late_delivery_risk`, `Days for shipping (real)`, `Days for shipment (scheduled)`, `Shipping Mode`, `Order Status` |
-| **DV3 Kortingen & marges** | `Order Item Discount`, `Order Item Discount Rate`, `Order Item Profit Ratio`, `Order Profit Per Order`, `Sales`, `Order Item Total`, `Market`, `Category Name` |
-| **DV4 Prioriteiten** | Samengesteld uit DV1 t/m DV3 per markt x categorie |
+| **DV1 Omzet & winst** | `Market`, `Category Name`, `Order Id`, `Order Item Id`, `order date (DateOrders)`, `Order Item Total` (omzet na korting), `Order Profit Per Order` (winst), `Sales` (bruto, voor de korting), `Order Status` (enkel om `CANCELED` en `SUSPECTED_FRAUD` uit te sluiten) |
+| **DV2 Leverbetrouwbaarheid** | `Order Id`, `Market`, `Category Name`, `order date (DateOrders)`, `Delivery Status` (vertraagd of niet), `Order Status` |
+| **DV3 Kortingen & marges** | `Order Item Discount`, `Order Item Discount Rate`, `Sales`, `Order Item Total`, `Order Profit Per Order`, `Market`, `Category Name` |
+| **DV4 Prioriteiten** | geen eigen kolommen: de regel gebruikt per markt x categorie de omzet en de marge (DV1) en het % vertraagde orders (DV2) |
 
-## Hoe betrouwbaar is een marge op weinig orderlijnen? (onderbouwing van de drempel in DV4)
+`Late_delivery_risk` wordt wel gelezen, maar alleen voor een controle in het kwaliteitsrapport (ze is gelijk aan `Delivery Status = 'Late delivery'`); ze telt in geen enkele KPI mee. Niet gebruikt: `Order Region`, `Order Item Quantity`, `Days for shipping`, `Shipping Mode` en `Order Item Profit Ratio`.
+
+## Hoe betrouwbaar is een marge op weinig orderlijnen? (achtergrond bij de drempel in DV4)
 
 De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking van **0,467**. Een gemiddelde over *n* lijnen heeft dan een standaardfout van ongeveer 0,467 / wortel(*n*). Dit is een **ruwe schatting**: de app gebruikt de gewogen marge (som winst / som omzet), niet het gewone gemiddelde.
 
@@ -91,11 +95,13 @@ De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking 
 | 300 | ca. 2,7 procentpunt |
 | 1 000 | ca. 1,5 procentpunt |
 
-Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis. Daarom is de drempel in DV4 instelbaar met 300 als standaard. 47 van de 162 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet).
+Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis.
 
-## Open vragen (aannames voor `beslissingslogboek.md`)
+**Wat de app doet:** in DV4 geldt een **vaste drempel van 30 in aanmerking komende orders** (beslissing D-010, logboekrij 5); ze is niet instelbaar. Daardoor tellen 9 van de 162 combinaties niet mee ("onvoldoende data"). Bovenstaande schatting laat zien dat 30 een bewuste maar beperkte keuze is: 47 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet) en 93 minder dan 300 lijnen. De 18 segmenten met klasse Prioriteit hebben minstens 202 orders.
 
-1. Tellen `CANCELED` en `SUSPECTED_FRAUD` mee in omzet en winst?
-2. Hoe behandelen we "Shipping canceled" in het percentage vertraagde orders (in of uit de noemer)?
-3. Welke maat voor marge: `Order Profit Per Order` / `Order Item Total` (= `Order Item Profit Ratio`) of op `Sales` (voor korting)?
-4. Welke van de dubbele kolommen houden we als standaard?
+## Beslissingen over de vragen uit de verkenning (zie `beslissingslogboek.md`)
+
+1. **Tellen `CANCELED` en `SUSPECTED_FRAUD` mee in omzet en winst?** Nee: ze vallen weg (7.754 regels); de overige orderstatussen blijven (logboekrij 1).
+2. **Hoe behandelen we "Shipping canceled" in het percentage vertraagde orders?** Uit de noemer; het zijn dezelfde rijen als de uitgesloten orders (logboekrij 1 en 14).
+3. **Welke maat voor marge?** Op omzet na korting: `Order Profit Per Order` / `Order Item Total` (logboekrij 2 en 3).
+4. **Welke van de dubbele kolommen houden we?** Enkel de 13 gekozen analysekolommen; omzet is `Order Item Total` en niet `Sales` (logboekrij 3).
