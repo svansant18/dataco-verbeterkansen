@@ -162,3 +162,11 @@ def test_register_references_real_tests():
                 missing.append(t)
     assert not missing, missing
 
+
+
+def test_the_correlation_has_its_own_register_entry_with_its_own_tests():
+    """De correlatie is geen verhouding van twee sommen: ze heeft een eigen KPI met eigen controles, los van de marge per kortingsklasse."""
+    corr, classes = KPI_REGISTER["K-CORR"], KPI_REGISTER["K-DISC"]
+    assert "Spearman" in corr["formula"] and corr["numerator"] == "-" and corr["denominator"] == "-"
+    assert len(corr["test_ids"]) == 2 and all("spearman" in t.lower() for t in corr["test_ids"])
+    assert "correlatie" not in classes["formula"].lower() and classes["numerator"] == "som winst" and classes["denominator"] == "som omzet"
