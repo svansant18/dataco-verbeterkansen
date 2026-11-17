@@ -62,7 +62,7 @@ else:
     col3.date_input("Orderdatum (periode)", min_value=d_min, max_value=d_max, key="global_period", format="DD/MM/YYYY")
     with col4:
         bron = "ruwe CSV" if data_source() == "ruwe CSV" else "publicatiebundel, zonder persoonsgegevens"
-        st.caption(f"**Datasetstatus:** echte DataCo-data ({bron}) · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
+        st.caption(f"**Datasetstatus:** de gepubliceerde DataCo-dataset ({bron}) · pipeline technisch gevalideerd · businessgoedkeuring: zie *Data & Methode*")
         st.button("Reset filters", on_click=reset_filters, width="stretch")
 
 # Six logical subpages inside one application, never six Streamlit processes.

@@ -47,3 +47,17 @@ def test_no_sidebar_and_no_teacher_or_no_ai_tabs():
         assert "st.sidebar" not in path.read_text(encoding="utf-8"), path.name
     methode = (ROOT / "views" / "methode.py").read_text(encoding="utf-8")
     assert "Docentcheck" not in methode and "No-AI" not in methode
+
+
+def test_kpi_register_document_matches_the_code():
+    """docs/KPI_REGISTER.md is gemaakt uit analysis/evidence.py (KPI_REGISTER) en mag er niet van afwijken: elk KPI-ID, label en elke formule moet erin staan."""
+    from analysis.evidence import KPI_REGISTER
+
+    text = (ROOT / "docs" / "KPI_REGISTER.md").read_text(encoding="utf-8")
+    missing = []
+    for kid, d in KPI_REGISTER.items():
+        for part in (kid, d["label"], d["formula"].replace("|", "\\|")):
+            if part not in text:
+                missing.append((kid, part[:60]))
+    assert not missing, missing
+    assert "PENDING AUDIT" not in text and "Som van geldige `Sales`" not in text
