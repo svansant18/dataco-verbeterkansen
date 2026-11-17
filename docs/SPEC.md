@@ -17,7 +17,7 @@ Bouw **één Python/Streamlit-app** met **zes logisch gescheiden pagina's** (som
 3. DV2 — Leverbetrouwbaarheid
 4. DV3 — Kortingen & Marges
 5. DV4 — Verbeterprioriteiten
-6. Data & Methode (met Data Quality, KPI-definities, aannames en beslissingslogboek als tabs)
+6. Data & Methode (met vier tabs: Rijentrechter & pipeline, Data-audit, KPI-definities en Aannames & keuzes, met het beslissingslogboek)
 
 **Centrale onderzoeksvraag**  
 *Welke markten en productcategorieën bieden DataCo de grootste verbetermogelijkheden wanneer we omzet, winstgevendheid en leverbetrouwbaarheid samen analyseren?*
@@ -146,10 +146,10 @@ Technisch: `st.expander` onder de hoofdgrafieken. Een DV-pagina mag daarnaast `s
 
 **Visualisatie B:** gesorteerde Top 5 (of 10) combinaties met reden, expliciet gebruikte drempels, databasis/steekproefgrootte en prioriteitslabel.
 
-**Voorstel voor prioriteitslogica, ter goedkeuring — niet hardcoderen vóór akkoord:**
-- Minimum **30 unieke relevante orders** per markt-categoriecombinatie voor een stabiele shippingvergelijking. Segmenten onder dit minimum krijgen 'onvoldoende data', géén 'laag risico'.
-- Vergelijk marge en vertraging met vooraf vastgelegde data-afhankelijke referenties (bv. globale gewogen marge respectievelijk globale late rate) en volume met omzetkwartielen. De exacte drempels worden na de audit met de student overeengekomen.
-- Houd liefst **transparante beslisregels in plaats van een arbitraire samengestelde 0–100-score**. Voorbeeld classificaties: 'Prioriteit — hoge omzet, lage marge én hoog leverrisico', 'Optimaliseren — hoog leverrisico', 'Monitoren — laag volume of aandachtspunt', 'Sterk — geen duidelijke risicocombinatie'. Deze labels zijn pas definitief na goedkeuring.
+**Gekozen prioriteitslogica (beslissing D-010, goedgekeurd; zie `beslissingslogboek.md`):**
+- Minimum **30 unieke relevante orders** per markt-categoriecombinatie. Segmenten onder dit minimum krijgen 'onvoldoende data', géén 'laag risico'.
+- Marge en vertraging worden vergeleken met data-afhankelijke referenties: de globale gewogen marge en het globale % vertraagde orders van het hele bedrijf in de gekozen periode (ze veranderen niet bij een filter op markt of categorie). Het volume wordt vergeleken met **de mediaan van de omzet** van de segmenten met voldoende data.
+- **Transparante beslisregels in plaats van een arbitraire samengestelde 0–100-score.** Klassen: 'Prioriteit' (omzet ≥ mediaan, marge onder de referentie én vertraging boven de referentie), 'Optimaliseren' (vertraging boven de referentie), 'Monitoren' (marge onder de referentie), 'Sterk' (geen duidelijke risicocombinatie) en 'Onvoldoende data' (minder dan 30 orders).
 - Gebruik deterministische sortering (prioriteitsklasse, omzet dalend, naam alfabetisch) en documenteer tie-breaks.
 - Een 'verbeterkans' is een hypothese/onderzoekprioriteit, **geen bewezen eurobesparing**. Geen fictief besparingspotentieel op de kaart.
 
@@ -175,21 +175,21 @@ Technisch: `st.expander` onder de hoofdgrafieken. Een DV-pagina mag daarnaast `s
 - Expander voor `Read` en `Schema audit`; `Validation`; `Cleaning`; `Order/orderline-granularity`; `KPI input preparation`; `Aggregation`. Alleen feitelijk uitgevoerde stappen groen markeren.
 - Bij filtering onderscheid tussen **globale pipeline-trechter (ongefilterde bron)** en **actieve analysepopulatie (na markt/categorie/periodefilters)**. Laat filters de historische globale rijentrechter niet verkeerd herschrijven.
 
-#### Tab 2 — KPI-definities & Formules
-
-- Tabel met: KPI-ID, label, betekenis, formule, teller, noemer, eenheid, grain, bronkolommen, populatie, uitval/NULL-regels, aggregatie, pipeline-stap, beslissing-ID, beperkingen.
-- Gebruik **één metadataregister in Python** als bron voor de UI en de tests, niet een herhaalde handmatige uitleg op iedere pagina.
-- Voor elk KPI: minimaal één kleine rekenvoorbeeldtabel met **fictieve** of geanonimiseerde waarden om de logica uit te leggen. Label die als didactisch voorbeeld, niet als DataCo-uitkomst.
-- Voor iedere DV kunnen gebruikers een specifiek KPI-ID kiezen en de herkomstinformatie lezen.
-
-#### Tab 3 — Data Quality & Aannames
+#### Tab 2 — Data-audit (Data Quality)
 
 - Grootte van de dataset, kolommen, nulls, duplicaten, conflicterende orderstatussen, anomalieën, uitsluitingen, consistentiecheck per KPI.
 - Maak aannames expliciet, bijv. `order-status`, `order-categorie-overlap`, `gewogen marge`, `kortingseenheid`, `minimum-aantal orders`, `dataset dekking`.
 - Geen gefingeerde volledig-groen-status. Bij onzekerheid 'Open / Nog niet gecontroleerd'.
 - Waarschuw voor volledige data die meer `Customer Email`, `Customer Password` of andere identificatoren kunnen bevatten: deze nooit zichtbaar maken in publieke previews.
 
-#### Tab 4 — Beslissingen & Tests
+#### Tab 3 — KPI-definities & Formules
+
+- Tabel met: KPI-ID, label, betekenis, formule, teller, noemer, eenheid, grain, bronkolommen, populatie, uitval/NULL-regels, aggregatie, pipeline-stap, beslissing-ID, beperkingen.
+- Gebruik **één metadataregister in Python** als bron voor de UI en de tests, niet een herhaalde handmatige uitleg op iedere pagina.
+- Voor elk KPI: minimaal één kleine rekenvoorbeeldtabel met **fictieve** of geanonimiseerde waarden om de logica uit te leggen. Label die als didactisch voorbeeld, niet als DataCo-uitkomst.
+- Voor iedere DV kunnen gebruikers een specifiek KPI-ID kiezen en de herkomstinformatie lezen.
+
+#### Tab 4 — Aannames & keuzes
 
 - Alleen **goedgekeurde** keuzes + rationale + referentie naar `beslissingslogboek.md` en testbewijs (testnaam / git commit indien beschikbaar). Open keuzes apart als `PENDING`.
 
@@ -212,13 +212,18 @@ project-root/
 │   ├── dv4.py
 │   └── methode.py
 ├── ui/common.py                    # Herbruikbare UI en bewijs-expanders
+├── ui/data.py                      # Data-toegang met cache, globale filters en afhankelijke filteropties
 ├── pipeline.py                     # Pure data-audit en ETL; geen Streamlit
-├── analysis/kpis.py               # Pure KPI-hulpfuncties; DV1–DV4 uitbouwen
-├── tests/                         # pytest voor data, grain, KPI en structuur
+├── analysis/kpis.py               # Pure KPI-berekeningen
+├── analysis/evidence.py           # KPI-register en bewijscontract
+├── tests/                         # pytest voor data, grain, KPI, filters, publicatiebundel en structuur
 ├── beslissingslogboek.md          # Beslissingen en aannames (V2.1 + V3 samengevoegd)
 ├── docs/                          # SPEC, KPI_REGISTER, ONDERZOEKSONTWERP, traceerbaarheid, architectuur
 ├── data/raw/                       # Immutabele lokale bron: genegeerd door Git
 ├── data/processed/                 # Alle gewijzigde data + provenance: genegeerd door Git
+├── data/published/                 # Publicatiebundel (13 analysekolommen, SHA-256): wel in Git, de app draait hierop online
+├── reports/local/                  # Lokale controlebestanden (rijentrechter): genegeerd door Git
+├── .streamlit/config.toml          # Thema van de app
 └── requirements.txt
 ```
 
@@ -243,8 +248,7 @@ Geen sidebar radio uit de huidige starter meer; migratie mag **na vrijgave van d
 `run_pipeline(source)` produceert minimaal:
 
 - `financial_rows`: veilige gevalideerde orderregelbasis.
-- `order_shipping`: gevalideerde unieke orderstatusbasis, als de audit dit toelaat.
-- `order_category_shipping`: gecontroleerde order-categorie-relaties voor DV2.
+- `order_category_shipping`: gecontroleerde order-categorie-relaties voor DV2 (een aparte tabel met unieke orders alleen, `order_shipping`, is niet nodig gebleken).
 - `stage_audit`: tabellen van uitsluitend echt verwijderde bronrijen per stap, redenen en aantallen.
 - `grain_audit`: unieke orders, orderregels, overlaps, inconsistenties en cardinaliteit.
 - `quality_report`: missings/invalids en resultaat van checks.
@@ -348,7 +352,7 @@ Per conclusie/advies:
 - Globale filters werken op DV1–DV4 en Overview, behoud bij navigatie. Markt/categorie-opties komen uit geauditeerde data. Datumfilter standaard volledige beschikbare periode.
 - Een filter met nul geldige rijen geeft een heldere **geen data**-melding en KPI=`N/A`, zonder kapotte grafieken.
 - De **globale bronrijentrechter** gebruikt altijd het volledige bronbestand. Toon apart de gefilterde analysepopulatie; geen misleidende vergelijking van filters met data cleaning.
-- `st.cache_data` voor deterministische geverifieerde tabellen. Bij nieuwe data/parameters een juiste cache key of invalidatie. Geen verborgen stale output.
+- `st.cache_resource` voor het eenmaal ingelezen resultaat van de pijplijn (of de bundel); de cache-sleutel bevat het bestand en zijn wijzigingstijdstip, dus nieuwe data geeft een nieuwe berekening. Geen verborgen stale output.
 - Plotly-grafieken waar interactieve hover nodig is; pandas voor grouping; Streamlit native cards/tabs/expanders voor UI. Geen zware custom CSS tenzij noodzakelijk.
 - Dataset heeft mogelijk identificerende kolommen. `data/raw/` en secrets niet committen of publiek hosten. Bescherm geen persoonsgegevens enkel door kolommen in de frontend te verbergen; gebruik **afgeleide, gereviewde veilige data** voor publieke deployment. Bewijs de brontransformatie lokaal; publiceer alleen geaggregeerde methodologie-data en veilig gemaakte previews.
 - CSV-exports uitsluitend geaggregeerd en privacy-reviewed. Eén deelvraag mag geen autorisatie vereisen; voorkom dat een openbare URL privédata ontsluit.

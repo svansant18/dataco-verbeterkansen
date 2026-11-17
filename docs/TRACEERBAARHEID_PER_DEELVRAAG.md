@@ -1,8 +1,8 @@
 # Traceerbaarheid per deelvraag — bindende acceptatiecriteria (V3)
 
-**Status: IMPLEMENTATIE NOG NIET VOLTOOID.** De starter bevat enkel audithelpers en een
-kleine testbare `analysis/evidence.py`-interface. De echte CSV is niet verwerkt.
-Dit document specificeert de ontbrekende functionaliteit uit de vorige review.
+**Status: geïmplementeerd.** De app (zes pagina's, pijplijn, tests en publicatiebundel) is af en staat online
+(https://dataco-verbeterkansen.streamlit.app); zie `README.md` en `beslissingslogboek.md`. Dit document blijft de lijst
+met acceptatiecriteria per deelvraag, met de regels voor bewijs en status (`PENDING` / `VALIDATED`) die de app naleeft.
 
 ## Overkoepelend: één reproduceerbare bewijsketen
 
