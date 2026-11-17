@@ -2,6 +2,8 @@
 
 Streamlit-onderzoeksapp voor Syntra Data Science, Project 1. De app analyseert de DataCo supply-chain-dataset.
 
+**Live app:** https://dataco-verbeterkansen.streamlit.app (de eerste keer na een pauze kan het even duren voor ze wakker is)
+
 **Centrale onderzoeksvraag:** welke markten en productcategorieën bieden DataCo de grootste verbetermogelijkheden wanneer we omzet, winstgevendheid en leverbetrouwbaarheid samen analyseren?
 
 | Deelvraag | Wat tonen we? | Weergave |
