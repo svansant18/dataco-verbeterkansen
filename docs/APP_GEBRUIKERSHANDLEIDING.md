@@ -15,7 +15,7 @@
 2. Selecteer een markt/categorie en ga naar DV1: verklaar omzetsom, winstsom en marge.
 3. Ga naar DV2: toon het verschil tussen orderregels en unieke orders, statusmapping, teller/noemer en uitzonderingen.
 4. Ga naar DV3: toon de kortingseenheid, waarnemingen, samenhang en het verschil tussen correlatie en causaliteit.
-5. Ga naar DV4: klik een verbeterprioriteit aan, toon waarom deze op basis van DV1–DV3 gekozen is.
+5. Ga naar DV4: klik een verbeterprioriteit aan, toon waarom deze op basis van DV1 (omzet en marge) en DV2 (vertraging) gekozen is; DV3 (korting) is de vervolgstap.
 6. Open Data & Methode: volg ruwe bron → audit → processed-versie → aggregaties → visualisaties via rijentrechter en preview per stap.
 7. Toon één test die een fout zou detecteren en een expliciete beslissing uit het logboek.
 

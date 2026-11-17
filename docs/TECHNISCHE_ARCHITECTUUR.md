@@ -41,7 +41,7 @@ read-only data/raw/  --(read + SHA-256)--> pipeline.py (pure functies)
 
 ## Diagrammen, filters en bewijs
 
-Elk KPI-resultaat toont bronvelden, kolom-grain, teller/noemer, nullbeleid, filters, pipeline-stappen, beslissing-ID, testbewijs en veilige analysetabel. DV4 gebruikt exact dezelfde DV1–DV3-berekeningen; geen nieuwe verborgen score.
+Elk KPI-resultaat toont bronvelden, kolom-grain, teller/noemer, nullbeleid, filters, pipeline-stappen, beslissing-ID, testbewijs en veilige analysetabel. DV4 gebruikt exact dezelfde DV1- en DV2-berekeningen; geen nieuwe verborgen score.
 
 ## Wijziging, review en release
 

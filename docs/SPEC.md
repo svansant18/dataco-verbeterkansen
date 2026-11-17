@@ -140,7 +140,7 @@ Technisch: `st.expander` onder de hoofdgrafieken. Een DV-pagina mag daarnaast `s
 
 **Doel:** direct de centrale vraag beantwoorden met een begrijpelijke, reproduceerbare prioriteitenregel.
 
-**Invoer:** uitsluitend gevalideerde geaggregeerde Markt × Categorie-KPI's uit DV1–DV3; *geen nieuwe brondefinities* in DV4.
+**Invoer:** uitsluitend gevalideerde geaggregeerde Markt × Categorie-KPI's uit DV1 (omzet, marge) en DV2 (% vertraagde orders); *geen nieuwe brondefinities* in DV4. DV3 (korting) is geen invoer van de klasse, maar komt terug in de voorgestelde acties.
 
 **Visualisatie A:** bubbeldiagram x = % vertraagde orders; y = gewogen winstmarge%; bubbelgrootte = omzet. Hover toont markt, categorie, omzet, winst, marge, late percentage, aantallen en reden voor classificatie.
 

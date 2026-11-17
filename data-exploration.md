@@ -97,7 +97,7 @@ De marge per orderlijn (`Order Item Profit Ratio`) heeft een standaardafwijking 
 
 Ter vergelijking: de marges van de 162 combinaties van markt en categorie verschillen onderling met een standaardafwijking van **4,8 procentpunt**. Onder ongeveer 300 lijnen is een verschil in marge tussen combinaties dus grotendeels ruis.
 
-**Wat de app doet:** in DV4 geldt een **vaste drempel van 30 in aanmerking komende orders** (beslissing D-010, logboekrij 5); ze is niet instelbaar. Daardoor tellen 9 van de 162 combinaties niet mee ("onvoldoende data"). Bovenstaande schatting laat zien dat 30 een bewuste maar beperkte keuze is: 47 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet) en 93 minder dan 300 lijnen. De 18 segmenten met klasse Prioriteit hebben minstens 202 orders.
+**Wat de app doet:** in DV4 geldt een **vaste drempel van 30 in aanmerking komende orders** (beslissing D-010, logboekrij 5 en 11); ze is niet instelbaar. In V2.1 was ze dat wel (minstens 300 lijnen, instelbaar van 30 tot 1.000). Daardoor tellen 9 van de 162 combinaties niet mee ("onvoldoende data"). Bovenstaande schatting laat zien dat 30 een bewuste maar beperkte keuze is: 47 combinaties hebben minder dan 100 lijnen (samen 1,5% van de omzet) en 93 minder dan 300 lijnen. De 18 segmenten met klasse Prioriteit hebben minstens 202 orders.
 
 ## Beslissingen over de vragen uit de verkenning (zie `beslissingslogboek.md`)
 

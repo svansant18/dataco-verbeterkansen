@@ -8,7 +8,7 @@ Welke markten en productcategorieën bieden DataCo de grootste verbetermogelijkh
 
 ## Vier pijlers
 
-1. **Decompositie:** splits de centrale vraag in DV1 omzet/winst/marge, DV2 vertraagde orders, DV3 korting/marge en DV4 geïntegreerde verbeterprioriteiten. DV4 gebruikt bevindingen uit DV1–DV3.
+1. **Decompositie:** splits de centrale vraag in DV1 omzet/winst/marge, DV2 vertraagde orders, DV3 korting/marge en DV4 geïntegreerde verbeterprioriteiten. DV4 combineert DV1 (omzet, marge) en DV2 (vertraging); DV3 (korting) is een vervolgstap.
 2. **Patroonherkenning:** zoek combinaties met veel omzet maar lage marge, ongewoon veel vertraagde orders, of verschillen in marges tussen kortingsklassen. Toon ook uitzonderingen en steekproefgroottes.
 3. **Abstractie:** gebruik alleen betekenisvolle bronvelden; kies aantoonbaar een juist grain (order versus orderregel) en geldige tellers/noemers. Definieer markt × categorie en wees expliciet over categorie-overlap.
 4. **Algoritme:** CSV lezen → schema/key/grain audit → expliciete cleaning → verifieerbare aggregatie → KPI's en filters → DV1–DV3 resultaten → transparante DV4-prioritering → conclusie met bewijslast.
