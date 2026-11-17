@@ -49,10 +49,10 @@ bestanden of een geslaagde structurele test.
 
 ## DV4 — Verbeterprioriteiten
 
-- Bouw uitsluitend op dezelfde **gevalideerde** DV1–DV3 aggregaties.
+- Bouw uitsluitend op dezelfde **gevalideerde** DV1- en DV2-aggregaties (omzet, marge, % vertraagd); DV3 (korting) is een vervolgstap.
 - Vereis vooraf goedgekeurde regels, drempels, minimaal aantal orders en tie-breaks.
-- Toon voor ieder segment de onderliggende omzet, marge, late rate, korting en reden van
-  rangschikking. Klikbaar terug naar de drie deelvragen / methode (via gedeelde filtercontext).
+- Toon voor ieder segment de onderliggende omzet, winst, marge, % vertraagd, het aantal orders en de reden van
+  rangschikking. Terug te volgen naar DV1, DV2 en de methode (via gedeelde filtercontext).
 - Geen verzonnen eurobesparingen, oorzakelijke uitspraken of resultaten uit mock-upbeelden.
 
 ## Data & Methode en publieke veiligheid
@@ -71,7 +71,7 @@ bestanden of een geslaagde structurele test.
 - Pytest: duplicaten, nulls, statusconflict, twee categorieën per order, nulomzet,
   discount unit/klasse grenzen, rijconservatie, DV4 tie-break en minimum N, filterreconciliatie,
   raw hash ongewijzigd, processed no-overwrite, privacyveilige publicatie.
-- Herleidbaarheid in de app: DV4 prioriteit → DV1–DV3 → bewijssectie → pipeline → processed provenance → raw brongranulariteit.
+- Herleidbaarheid in de app: DV4 prioriteit → DV1 en DV2 → bewijssectie → pipeline → processed provenance → raw brongranulariteit.
 - Elke PASS-status krijgt een concrete uitvoer/test/URL/commit; anders `PENDING`/`NOT VERIFIED`.
 
 **Geen tweede app of ML toevoegen.**

@@ -6,7 +6,7 @@ Missie en vier ideeën: zie `README.md`. Databronnen en ophaalmethodes: `data-ex
 
 1. **Eén Streamlit-app met zes pagina's** (`app.py` met `st.navigation(position="top")` en globale filters
    voor markt, categorie en periode). Pagina's in `views/`: `overview.py`, `dv1.py` (omzet en winst), `dv2.py`
-   (leverbetrouwbaarheid), `dv3.py` (kortingen en marges), `dv4.py` (verbeterprioriteiten, gebouwd op DV1 tot DV3)
+   (leverbetrouwbaarheid), `dv3.py` (kortingen en marges), `dv4.py` (verbeterprioriteiten, gebouwd op DV1 en DV2; DV3 is een vervolgstap)
    en `methode.py` (Data & Methode: rijentrechter, data-audit, KPI-definities, aannames).
    Lagen: `pipeline.py` (pure datastappen, geen Streamlit) → `analysis/` (pure KPI's en bewijs, geen Streamlit)
    → `ui/` (gedeelde weergave en data-toegang) → `views/` (enkel paginalayout). Geen KPI-formules in `views/`.

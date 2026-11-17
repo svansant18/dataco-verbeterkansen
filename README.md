@@ -13,7 +13,7 @@ Streamlit-onderzoeksapp voor Syntra Data Science, Project 1. De app analyseert d
 | **DV3 — Kortingen & marges** | Verband tussen kortingspercentage en gerealiseerde marge | Scatter (steekproef) + marge per kortingsklasse |
 | **DV4 — Verbeterprioriteiten** | Welke markt-categoriecombinaties verdienen als eerste onderzoek? | Prioriteitenmatrix + top 5 |
 
-DV4 synthetiseert DV1 tot DV3. De app claimt geen oorzakelijkheid en geen financiële besparing die de data niet onderbouwt.
+DV4 combineert DV1 (omzet en marge) en DV2 (% vertraagde orders) tot een prioriteitsklasse per markt × categorie; DV3 (korting) is geen invoer van die klasse maar een voorgestelde vervolgstap. De app claimt geen oorzakelijkheid en geen financiële besparing die de data niet onderbouwt.
 
 De app heeft zes pagina's: Overview, DV1 tot DV4 en **Data & Methode** (rijentrechter, data-audit, KPI-definities, aannames).
 Bovenaan staan filters voor markt, categorie en periode; er is geen zijbalk. De filters hangen van elkaar af: kies je een markt,
