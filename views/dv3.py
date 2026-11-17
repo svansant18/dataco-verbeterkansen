@@ -33,7 +33,7 @@ with left:
     with st.container(border=True):
         st.subheader("Korting versus marge per orderregel")
         sample = deterministic_sample(fin[fin[REVENUE_COL] > 0], n=5000, seed=42)
-        fig = go.Figure(go.Scattergl(
+        fig = go.Figure(go.Scatter(   # gewone (SVG-)scatter: 5.000 punten zijn genoeg, en WebGL is niet in elke browser beschikbaar
             x=100 * sample["Order Item Discount Rate"], y=100 * sample[PROFIT_COL] / sample[REVENUE_COL], mode="markers",
             marker=dict(color=C_MARGIN, size=5, opacity=0.25),
             hovertemplate="Korting %{x:.0f}%<br>Regelmarge %{y:.1f}%<extra></extra>",
