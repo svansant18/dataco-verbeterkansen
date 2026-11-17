@@ -73,7 +73,8 @@ detail = classes.rename(columns={"discount_class": "Kortingsklasse", "revenue": 
 detail["Kortingsklasse"] = detail["Kortingsklasse"].astype(str)
 n_in = len(scope.result.financial_rows)
 evidence_panels(
-    {"K-DISC": dict(numerator=total["profit"], denominator=total["revenue"], result=corr["spearman"], input_rows=n_in, analysis_rows=len(fin)),
+    {"K-DISC": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"], input_rows=n_in, analysis_rows=len(fin)),
+     "K-CORR": dict(numerator=None, denominator=None, result=corr["spearman"], input_rows=n_in, analysis_rows=corr["n"]),
      "K-MARGIN": dict(numerator=total["profit"], denominator=total["revenue"], result=total["margin_pct"], input_rows=n_in, analysis_rows=len(fin))},
     scope, detail, file_stem="dv3_kortingsklassen",
     notes=(f"Kortingseenheid geaudit: min {scope.result.quality_report['discount_rate_min']}, max {scope.result.quality_report['discount_rate_max']} → fractie 0–1 ({scope.result.quality_report['discount_rate_unit']}); in de grafiek ×100. Geen dubbele omrekening.",

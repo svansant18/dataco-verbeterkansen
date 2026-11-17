@@ -159,3 +159,17 @@ def test_no_chart_needs_webgl():
             spec = json.loads(getattr(proto, "spec", None) or proto.figure.spec)
             kinds = {trace["type"] for trace in spec["data"]}
             assert not any(k.endswith("gl") for k in kinds), (page, kinds)
+
+
+def test_dv3_shows_the_correlation_and_the_class_margin_as_separate_kpis():
+    """In "Hoe is dit berekend?" op DV3 staat de marge per kortingsklasse (met teller en noemer) los van de correlatie (zonder teller en noemer)."""
+    at = _open()
+    at.switch_page("views/dv3.py").run()
+    assert not at.exception
+    text = "\n".join(str(m.value) for m in at.markdown)
+    assert "`K-DISC`" in text and "`K-CORR`" in text
+    corr_block = text.split("`K-CORR`", 1)[1].split("####", 1)[0]
+    assert "teller: —" in corr_block and "noemer: —" in corr_block
+    assert "test_spearman_with_ties_matches_hand_calculation" in corr_block
+    disc_block = text.split("`K-DISC`", 1)[1].split("####", 1)[0]
+    assert "teller: —" not in disc_block and "(som winst)" in disc_block and "(som omzet)" in disc_block
