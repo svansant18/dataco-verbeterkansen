@@ -145,3 +145,17 @@ def test_the_source_is_credited_on_data_and_methode():
     at.switch_page("views/methode.py").run()
     text = " ".join(str(c.value) for c in at.caption)
     assert "Constante" in text and "10.17632/8gx2fvg2k6" in text and "CC BY 4.0" in text and "Bewerkt" in text
+
+
+def test_no_chart_needs_webgl():
+    """WebGL is niet in elke browser beschikbaar (hardwareversnelling uit, virtuele machine, schoolcomputer): dan toont Plotly
+    "WebGL not supported by your browser" in plaats van de grafiek. Geen enkele grafiek mag dus een WebGL-trace (scattergl) gebruiken."""
+    at = _open()
+    for page in PAGES:
+        at.switch_page(page).run()
+        assert not at.exception, page
+        for chart in at.get("plotly_chart"):
+            proto = chart.proto
+            spec = json.loads(getattr(proto, "spec", None) or proto.figure.spec)
+            kinds = {trace["type"] for trace in spec["data"]}
+            assert not any(k.endswith("gl") for k in kinds), (page, kinds)
